@@ -1,11 +1,3 @@
-# OscilloscopeGeneratorTrigger.py
-#
-# This example sets up the generator to generate a 1 kHz triangle waveform, 4 Vpp.
-# It also sets up the oscilloscope to perform a block mode measurement, triggered on "Generator new period".
-# A measurement is performed and the data is written to OscilloscopeGeneratorTrigger.csv.
-#
-# Find more information on http://www.tiepie.com/LibTiePie .
-
 from __future__ import print_function
 import time
 # import os

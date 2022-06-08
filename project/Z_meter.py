@@ -1,6 +1,3 @@
-
-
-
 def Z_meter_excitation(f0,Nharm,Tsignal,fS,amp):
     from math import sin
     # f0=4e3                        # freq. fondamentale    4 KHz
