@@ -2,14 +2,14 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 nstep = 10
-dCstep = 10
+dCstep = 100
 
-Vin = 10;
 f = 55000.0
 w = 2*np.pi*f
 C = 1e-12
 dC = C/dCstep
 R = 1/(w*C)
+Vin = 10
 
 
 C_value = np.zeros(nstep);
