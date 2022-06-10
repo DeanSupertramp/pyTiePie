@@ -13,6 +13,8 @@ Vin = 10
 
 
 C_value = np.zeros(nstep);
+#C_value = C_value.reshape(1,-1)
+
 dC_value = np.zeros([nstep,dCstep]);
 
 V1_num_m = np.zeros([nstep,dCstep]);
@@ -22,7 +24,7 @@ V1_den_m = np.zeros([nstep,dCstep]);
 V2_den_m = np.zeros(nstep);
 
 V1_m = np.zeros([nstep,dCstep]);
-V2_m = np.zeros([nstep,dCstep]);
+V2_m = np.zeros(nstep);
 
 diff_m = np.zeros([nstep,dCstep]);
 ii = np.arange(nstep);
@@ -36,7 +38,7 @@ def ciclo():
     for i in range(1,nstep+1):
         for j in range(1,dCstep+1):
             C_value[i-1]=C*i;                           # da 1pF a 10pF
-            dC_value[i-1,j-1] = C_value[i-1]/(j*dCstep)    # da C/10 a C/100
+            dC_value[i-1,j-1] = C_value[i-1]/(j*dCstep)    # da C/100 a C/1000
 
 def voltageDifference():
     V1_num = w * R * (C + dC);
@@ -56,15 +58,15 @@ def voltageDifference():
 
 def voltageDifference_CICLO():
     for i in range(nstep):
-        for j in range(int(dCstep)):
+        for j in range(dCstep):
 
             V1_num_m[i,j] = w * R * (C_value[i] + dC_value[i,j]);
             V1_den_m[i,j] = np.sqrt(1 + pow(w,2) * pow(R,2) * pow(C_value[i]+dC_value[i,j],2));
             V1_m[i,j] = Vin * V1_num_m[i,j] / V1_den_m[i,j];
             V2_num_m[i] = w * R * C_value[i];
             V2_den_m[i] = np.sqrt(1 + pow(w,2) * pow(R,2) * pow(C_value[i],2));
-            V2_m[i,j] = Vin * V2_num_m[i] /V2_den_m[i];
-            diff_m[i,j] = (V1_m[i,j]-V2_m[i,j])*1000;    # mVs
+            V2_m[i] = Vin * V2_num_m[i] /V2_den_m[i];
+            diff_m[i,j] = (V1_m[i,j]-V2_m[i])*1000;    # mVs
             
             
 def plotGraph():
@@ -72,7 +74,7 @@ def plotGraph():
     fig, axs = plt.subplots(2)
     fig.suptitle('Voltage measurements ')
     axs[0].plot(ii[1:], V1_m[1:,dCstep-1])
-    axs[1].plot(ii[1:], V2_m[1:,dCstep-1])
+    axs[1].plot(ii[1:], V2_m[1:])
     axs[0].set_title('V1')
     axs[1].set_title('V2')
     axs[1].set_xlabel('n steps')
@@ -94,7 +96,6 @@ def plotGraph():
                extent=[dCstep, dCstep*nstep, nstep, 1],
                aspect='auto')
     plt.colorbar()
-
 
 
 
