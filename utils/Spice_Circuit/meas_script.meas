@@ -1,0 +1,3 @@
+.meas TRAN VMAX MAX v(out) FROM 10us TO 100us
+.meas TRAN VMAX2 MAX v(out2) FROM 10us TO 100us
+.meas TRAN Vdiff PARAM VMAX2-VMAX
