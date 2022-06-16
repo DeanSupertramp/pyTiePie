@@ -1,18 +1,42 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
+from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes,mark_inset
+
+# import plotly.tools as tls
+
+# import plotly.io as pio
+# pio.renderers.default='browser'
+
+# from plotly.offline import download_plotlyjs, init_notebook_mode,  plot
+# from plotly.graph_objs import *
+# init_notebook_mode()
+
 import logSpice2Matrix as S2M
+
+
+# ADC Parameter
+Fs = 100e6  # Sampling rate 100 MSa/s
+Ts = 1/Fs   # Sampling time
+
+# Input Signal
+f = 55000.0
+w = 2*np.pi*f
+Vin = 10
+n_period = 1
+period = np.round((1/f)*n_period*Fs).astype(int)
+t = np.arange(Fs+1)*Ts # Time vector
+sinewave = Vin*np.sin(2*np.pi*f*t)  # Original signal
 
 nstep = 10
 dCstep = 100
 init_dCstep = 100
 
-f = 55000.0
-w = 2*np.pi*f
+# Circuit Parameter
 C = 1e-12
 dC = C/dCstep
 R = 1/(w*C)
-Vin = 10
+
 
 C_value = np.zeros(nstep);
 
@@ -32,7 +56,60 @@ ii = np.arange(nstep);
 
 matr = np.zeros([10,10])
 
+def quantization():             # https://en.wikipedia.org/wiki/Quantization_(signal_processing) // https://github.com/GuitarsAI/ADSP_Tutorials/blob/master/ADSP_01_Quantization.ipynb
+    N = 4 # n bit ADC
+    q = (Vin-(-Vin))/(2**N)
+    # Encode
+    sinewave_quant_rise_ind = np.floor(sinewave/q)
+    sinewave_quant_tread_ind = np.round(sinewave/q)
+    # Decode
+    sinewave_quant_rise_rec = sinewave_quant_rise_ind * q + q/2
+    sinewave_quant_tread_rec = sinewave_quant_tread_ind * q
+    # Shape for plotting
+    t_q = np.delete(np.repeat(t[:period+1],2),-1)
+    sinewave_quant_rise_rec_plot = np.delete(np.repeat(sinewave_quant_rise_rec[:period+1],2),0)
+    sinewave_quant_tread_rec_plot = np.delete(np.repeat(sinewave_quant_tread_rec[:period+1],2),0)
+    # Quantization Error
+    quant_error_tread = sinewave_quant_tread_rec - sinewave
+    quant_error_rise = sinewave_quant_rise_rec - sinewave
+    # Plot
+    fig = plt.figure(figsize=(12,8))
+    plt.subplot(2,1,1)
+    #ax = plt.subplots(1,2)
+    plt.plot(t[:period+1], sinewave[:period+1], label='Original Signal')
+    #plt.plot(t_q, sinewave_quant_rise_rec_plot, label='Quantized Signal (Mid-Rise)')
 
+    plt.plot(t_q, sinewave_quant_tread_rec_plot, label='Quantized Signal (Mid-Tread)')
+    plt.title('Original and Quantized Signals', fontsize = 18)
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude')
+    #plt.yticks(np.arange((-1-q)*Vin, (1+q)*Vin, q))
+    
+    # axins = zoomed_inset_axes(ax, 2, loc=1)#loc='lower right')
+    # axins.yaxis.get_major_locator().set_params(nbins=10)
+    # axins.xaxis.get_major_locator().set_params(nbins=10) 
+    # #axins.plot(t[:period+1], sinewave[:period+1])
+    # x1,x2,y1,y2 = 100, 200, 0, 10.1
+    # axins.set_xlim(x1,x2)
+    # axins.set_ylim(y1,y2)
+    # # plt.xticks(visible=False)
+    # # plt.yticks(visible=False)
+    # # mark_inset(ax, axins, loc1=1, loc2=3)#, fc="none", ec="0.5")
+    # plt.draw()
+    # plt.show()
+     
+    plt.subplot(2,1,2)
+    plt.plot(t[:period+1], quant_error_tread[:period+1], label='Quantization Error')
+    plt.grid()
+    plt.title('Quantization Error (Mid-Tread)', fontsize = 18)
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude')
+    plt.subplots_adjust(hspace = 0.5)
+
+
+
+    
+    
 def ciclo():
     for i in range(1,nstep+1):
         for j in range(1,nstep+1):
@@ -124,6 +201,7 @@ if __name__ == '__main__':
     error = (diff_m - matr)
     
     mse = np.mean((diff_m - matr)**2)     # Mean Square Error
+    
+    quantization()
 
     plotGraph()
-
