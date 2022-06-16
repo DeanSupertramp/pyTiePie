@@ -37,7 +37,6 @@ C = 1e-12
 dC = C/dCstep
 R = 1/(w*C)
 
-
 C_value = np.zeros(nstep);
 
 dC_value = np.zeros([nstep,nstep]);
@@ -57,7 +56,7 @@ ii = np.arange(nstep);
 matr = np.zeros([10,10])
 
 def quantization():             # https://en.wikipedia.org/wiki/Quantization_(signal_processing) // https://github.com/GuitarsAI/ADSP_Tutorials/blob/master/ADSP_01_Quantization.ipynb
-    N = 4 # n bit ADC
+    N = 14 # n bit ADC
     q = (Vin-(-Vin))/(2**N)
     # Encode
     sinewave_quant_rise_ind = np.floor(sinewave/q)
@@ -72,32 +71,19 @@ def quantization():             # https://en.wikipedia.org/wiki/Quantization_(si
     # Quantization Error
     quant_error_tread = sinewave_quant_tread_rec - sinewave
     quant_error_rise = sinewave_quant_rise_rec - sinewave
+        
     # Plot
-    fig = plt.figure(figsize=(12,8))
+    plt.figure(figsize=(12,8))
     plt.subplot(2,1,1)
-    #ax = plt.subplots(1,2)
+    # fig, ax = plt.subplots(1, figsize=(10,6))
     plt.plot(t[:period+1], sinewave[:period+1], label='Original Signal')
     #plt.plot(t_q, sinewave_quant_rise_rec_plot, label='Quantized Signal (Mid-Rise)')
-
-    plt.plot(t_q, sinewave_quant_tread_rec_plot, label='Quantized Signal (Mid-Tread)')
+    fig = plt.plot(t_q, sinewave_quant_tread_rec_plot, label='Quantized Signal (Mid-Tread)')
     plt.title('Original and Quantized Signals', fontsize = 18)
     plt.xlabel('Time [s]')
     plt.ylabel('Amplitude')
     #plt.yticks(np.arange((-1-q)*Vin, (1+q)*Vin, q))
-    
-    # axins = zoomed_inset_axes(ax, 2, loc=1)#loc='lower right')
-    # axins.yaxis.get_major_locator().set_params(nbins=10)
-    # axins.xaxis.get_major_locator().set_params(nbins=10) 
-    # #axins.plot(t[:period+1], sinewave[:period+1])
-    # x1,x2,y1,y2 = 100, 200, 0, 10.1
-    # axins.set_xlim(x1,x2)
-    # axins.set_ylim(y1,y2)
-    # # plt.xticks(visible=False)
-    # # plt.yticks(visible=False)
-    # # mark_inset(ax, axins, loc1=1, loc2=3)#, fc="none", ec="0.5")
-    # plt.draw()
-    # plt.show()
-     
+       
     plt.subplot(2,1,2)
     plt.plot(t[:period+1], quant_error_tread[:period+1], label='Quantization Error')
     plt.grid()
@@ -106,7 +92,35 @@ def quantization():             # https://en.wikipedia.org/wiki/Quantization_(si
     plt.ylabel('Amplitude')
     plt.subplots_adjust(hspace = 0.5)
 
-
+    plt.figure(figsize=(12,8))
+    plt.subplot(2,1,1)
+    plt.plot(t[1350:1370], sinewave[1350:1370], label='Original Signal')
+    #plt.plot(t_q, sinewave_quant_rise_rec_plot, label='Quantized Signal (Mid-Rise)')
+    fig = plt.plot(t_q[2*1350:2*1370], sinewave_quant_tread_rec_plot[2*1350:2*1370], label='Quantized Signal (Mid-Tread)')
+    plt.title('Zoom on Signal', fontsize = 18)
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude [V]')
+    
+    plt.subplot(2,1,2)
+    plt.plot(t[1350:1370], quant_error_tread[1350:1370], label='Quantization Error')
+    plt.grid()
+    plt.title('Quantization Error (Mid-Tread)', fontsize = 18)
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude [V]')
+    plt.subplots_adjust(hspace = 0.5)
+    
+    plt.figure()
+    plt.title("Distribution")
+    plt.ylabel('Occurrency')
+    plt.xlabel('Error value')
+    # rif: https://stackoverflow.com/questions/33203645/how-to-plot-a-histogram-using-matplotlib-in-python-with-a-list-of-data
+    # rif: https://en.wikipedia.org/wiki/Freedman%E2%80%93Diaconis_rule
+    q25, q75 = np.percentile(quant_error_rise, [25, 75])
+    bin_width = 2 * (q75 - q25) * len(quant_error_rise) ** (-1/3)
+    bins = round((quant_error_rise.max() - quant_error_rise.min()) / bin_width)
+    print("Freedman–Diaconis number of bins:", bins)
+    plt.hist(quant_error_rise, bins=bins)
+    plt.show()
 
     
     
@@ -135,7 +149,6 @@ def voltageDifference():
 def voltageDifference_CICLO():
     for i in range(nstep):
         for j in range(nstep):
-
             V1_num_m[i,j] = w * R * (C_value[i] + dC_value[i,j]);
             V1_den_m[i,j] = np.sqrt(1 + pow(w,2) * pow(R,2) * pow(C_value[i]+dC_value[i,j],2));
             V1_m[i,j] = Vin * V1_num_m[i,j] / V1_den_m[i,j];
@@ -156,6 +169,7 @@ def plotGraph():
     axs[1].set_xlabel('n steps')
     axs[0].set_ylabel('voltage (V)')
     axs[1].set_ylabel('voltage (V)')
+    plt.subplots_adjust(hspace = 0.5)
 
     plt.figure()
     plt.title("Theorical Voltage Difference")
@@ -201,6 +215,7 @@ if __name__ == '__main__':
     error = (diff_m - matr)
     
     mse = np.mean((diff_m - matr)**2)     # Mean Square Error
+    print("Mean Square Error Spice vs. Theorical Simulation: " + str(mse))
     
     quantization()
 
