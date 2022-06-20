@@ -68,9 +68,7 @@
         <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
@@ -118,56 +116,46 @@ Università della Calabria
 
 <!-- GETTING STARTED -->
 ## Getting Started
-
-This is an example of how you may give instructions on setting up your project locally.
 To get a local copy up and running follow these simple example steps.
 
-<!-- ### Prerequisites
+### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-* npm
-  ```sh
-  npm install npm@latest -g
-  ``` -->
+This is a list of things you need for use the software and how to install them.
+1. Python3
+2. Driver and software of TiePie (mod. HS5) at: [https://www.tiepie.com/en/usb-oscilloscope/handyscope-hs5#downloads](https://www.tiepie.com/en/usb-oscilloscope/handyscope-hs5#downloads)
+3. Install the Python bindings by executing: 
+    ```sh
+    pip install python-libtiepie
+    ```
+    more information [here](https://www.tiepie.com/en/libtiepie-sdk/python).
 
-### Installation
-
-<!-- 1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
-   ```sh
-   git clone https://github.com/DeanSupertramp/pyTiePie.git
-   ```
-3. Install NPM packages
-   ```sh
-   npm install
-   ```
-4. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ``` -->
-
-<!-- 1. Get a free API Key at [https://example.com](https://example.com) -->
-1. Clone the repo
-   ```sh
-   git clone https://github.com/DeanSupertramp/pyTiePie.git
-   ```
-2. Install packages
+4. Install packages:
    ```sh
    pip install pandas
    ```
    or
-      ```sh
+   ```sh
    conda install pandas
    ```
-<!-- 3. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ``` -->
 
+### Installation
+
+1. Clone the repo
+   ```sh
+   git clone https://github.com/DeanSupertramp/pyTiePie.git
+   ```
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
+### Map of the repository
+* [project](https://github.com/DeanSupertramp/pyTiePie/tree/main/project): contains scripts written to work with TiePie.
+* [libtiepie](https://github.com/DeanSupertramp/pyTiePie/tree/main/libtiepie): TiePie's Python module.
+* [example](https://github.com/DeanSupertramp/pyTiePie/tree/main/examples): contains example for TiePie.
+* [images](https://github.com/DeanSupertramp/pyTiePie/tree/main/images): contains images useful for the repository.
+* [utils](https://github.com/DeanSupertramp/pyTiePie/tree/main/utils): contains scripts, tools and simulations:
+  * [Excel](https://github.com/DeanSupertramp/pyTiePie/tree/main/utils/Excell) files
+  * [Spice](https://github.com/DeanSupertramp/pyTiePie/tree/main/utils/Spice_Circuit): LTSpice simulation files
+  * [script](https://github.com/DeanSupertramp/pyTiePie/tree/main/utils/script): Python script for simulation and analysis.  
 
 <!-- USAGE EXAMPLES -->
 <!-- ## Usage
@@ -184,9 +172,9 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 ## Roadmap
 
 - [ ] Circuit sensitivity analysis respect to a capacity variation, simulating the use of an ADC for acquisition
-  - [ ] Impedance measurement with R series
-  - [ ] Calculate the voltage difference measured for a given variation in capacitance
-  - [ ] Simulate the quantization of the ADC
+  - [x] Impedance measurement with R series
+  - [x] Calculate the voltage difference measured for a given variation in capacitance
+  - [x] Simulate the quantization of the ADC
   - [ ] Apply lock-in
   - [ ] Derive the phasors at the various frequencies and therefore dC at the various frequencies by comparing the estimated dC with the theoretical simulated one
 - [ ] Impedance measurement with Wheatstone bridge
