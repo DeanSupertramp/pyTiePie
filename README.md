@@ -109,6 +109,7 @@ Università della Calabria
 
 * [Python3](https://www.python.org/)
 * [TiePie](https://www.tiepie.com/en)
+* [LTSpice](https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html)
 * and other future tools...
 
 <p align="right">(<a href="#top">back to top</a>)</p>
@@ -151,9 +152,13 @@ This is an example of how to list things you need to use the software and how to
    git clone https://github.com/DeanSupertramp/pyTiePie.git
    ```
 2. Install packages
-   <!-- ```sh
-   npm install
-   ``` -->
+   ```sh
+   pip install pandas
+   ```
+   or
+      ```sh
+   conda install pandas
+   ```
 <!-- 3. Enter your API in `config.js`
    ```js
    const API_KEY = 'ENTER YOUR API';
@@ -178,10 +183,15 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 <!-- ROADMAP -->
 ## Roadmap
 
-- [ ] Feature 1
-- [ ] Feature 2
-- [ ] Feature 3
-    - [ ] Nested Feature
+- [ ] Circuit sensitivity analysis respect to a capacity variation, simulating the use of an ADC for acquisition
+  - [ ] Impedance measurement with R series
+  - [ ] Calculate the voltage difference measured for a given variation in capacitance
+  - [ ] Simulate the quantization of the ADC
+  - [ ] Apply lock-in
+  - [ ] Derive the phasors at the various frequencies and therefore dC at the various frequencies by comparing the estimated dC with the theoretical simulated one
+- [ ] Impedance measurement with Wheatstone bridge
+  - [ ] Simulate both the reference capacitor on a healthy point and in the air
+  - [ ] Repeat the analysis for the estimate of dC
 
 See the [open issues](https://github.com/DeanSupertramp/pyTiePie/issues) for a full list of proposed features (and known issues).
 
