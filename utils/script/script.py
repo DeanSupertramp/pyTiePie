@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes,mark_inset
+#from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes,mark_inset
 
 # import plotly.tools as tls
 
@@ -37,23 +37,39 @@ C = 1e-12
 dC = C/dCstep
 R = 1/(w*C)
 
-C_value = np.zeros(nstep);
+C_value = np.zeros(nstep)
 
-dC_value = np.zeros([nstep,nstep]);
+dC_value = np.zeros([nstep,nstep])
 
-V1_num_m = np.zeros([nstep,nstep]);
+V1_num_m = np.zeros([nstep,nstep])
 V2_num_m = np.zeros(nstep);
 
-V1_den_m = np.zeros([nstep,nstep]);
-V2_den_m = np.zeros(nstep);
+V1_den_m = np.zeros([nstep,nstep])
+V2_den_m = np.zeros(nstep)
 
-V1_m = np.zeros([nstep,nstep]);
-V2_m = np.zeros(nstep);
+V1_m = np.zeros([nstep,nstep])
+V2_m = np.zeros(nstep)
 
-diff_m = np.zeros([nstep,nstep]);
+diff_m = np.zeros([nstep,nstep])
 ii = np.arange(nstep);
 
 matr = np.zeros([10,10])
+
+B_num = np.zeros([nstep,nstep])
+B_den = np.zeros([nstep,nstep])
+A_num = np.zeros(nstep)
+A_den = np.zeros([nstep,nstep])
+Vab1_abs = np.zeros([nstep,nstep])
+
+a = np.zeros([nstep,nstep])
+#b = np.zeros(nstep)
+c = np.zeros([nstep,nstep])
+#d = np.zeros(nstep)
+e = np.zeros(nstep)
+dC_Bridge = np.zeros([nstep,nstep])
+dC_Bridge_num = np.zeros([nstep,nstep])
+dC_Bridge_den = np.zeros([nstep,nstep])
+
 
 def quantization():             # https://en.wikipedia.org/wiki/Quantization_(signal_processing) // https://github.com/GuitarsAI/ADSP_Tutorials/blob/master/ADSP_01_Quantization.ipynb
     N = 14 # n bit ADC
@@ -121,6 +137,21 @@ def quantization():             # https://en.wikipedia.org/wiki/Quantization_(si
     print("Freedman–Diaconis number of bins:", bins)
     plt.hist(quant_error_rise, bins=bins)
     plt.show()
+
+    # NOISE
+    noise = np.random.uniform(-.1, .1, sinewave.shape)
+    sinewave_noised = sinewave + noise
+    
+    plt.figure(figsize=(12,8))
+    #plt.subplot(2,1,1)
+    # fig, ax = plt.subplots(1, figsize=(10,6))
+    plt.plot(t[:period+1], sinewave_noised[:period+1], label='Original Signal with noise')
+    #plt.plot(t_q, sinewave_quant_rise_rec_plot, label='Quantized Signal (Mid-Rise)')
+    fig = plt.plot(t_q, sinewave_quant_tread_rec_plot, label='Quantized Signal (Mid-Tread) with noise')
+    plt.title('Original and Quantized Signals with noise', fontsize = 18)
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude')
+    
 
     
     
@@ -204,6 +235,60 @@ def plotGraph():
                aspect='auto')
     plt.colorbar()
     
+    
+def W_Bridge():
+    #Cair = 50e-12
+    Cair = C_value
+    for i in range(nstep):
+        for j in range(nstep):
+            B_num[i,j] = 1/(w*(C_value[i] + dC_value[i,j]))
+            B_den[i,j] = np.sqrt( R**2 + pow(B_num[i,j],2) )
+            A_num[i] = 1/(w*Cair[i])
+            # A_num = 1/(w*Cair)
+            A_den[i,j] = np.sqrt( R**2 + pow(A_num[i],2) )
+            # A_den[i,j] = np.sqrt( R**2 + pow(A_num,2) )
+            Vab1_abs[i,j] = ( (B_num[i,j]/B_den[i,j]) - (A_num[i]/A_den[i,j]) ) * Vin # Volt
+            # Vab1_abs[i,j] = ( (B_num[i,j]/B_den[i,j]) - (A_num/A_den[i,j]) ) * Vin # Volt
+            
+    plt.figure()
+    plt.title("Wheatstone Bridge Voltage Output")
+    plt.ylabel('Cap Value [pF]')
+    plt.xlabel('dC')
+    plt.imshow(Vab1_abs, origin='upper',
+               extent=[dCstep, dCstep*nstep, nstep, 1],
+               aspect='auto')
+    lbl = plt.colorbar()
+    lbl.set_label('[V]', rotation=270, labelpad=15)
+    return Vab1_abs
+    
+def get_dC(Vab, Cair):
+    Cair = C_value[0]
+    for i in range(nstep):
+        for j in range(nstep):
+            a[i,j] = R * Vab[i,j]/Vin
+            b = ( R / (w*Cair) ) / (np.sqrt(R**2 + 1/(w*Cair)**2) )
+            c[i,j] = 1 - ( Vab[i,j]/Vin )
+            d = ( 1 / (w*Cair) ) / (np.sqrt((R**2) + 1/(w*Cair)**2) )
+            #e[i] = 1/(w*C_value[i])
+            e[i] = -((w**2)*C_value[i])
+            #dC_Bridge_num[i,j] = np.subtract(a[i,j],  b)
+            dC_Bridge_num[i,j] = a[i,j] -  b
+            dC_Bridge_den[i,j] = c[i,j] + d
+            dC_Bridge[i,j] = 1 / ( e[i] *  dC_Bridge_num[i,j] /  dC_Bridge_den[i,j] ) 
+
+    plt.figure()
+    plt.title("Wheatstone Bridge Voltage Output")
+    plt.ylabel('Cap Value [pF]')
+    plt.xlabel('dC')
+    plt.imshow(dC_Bridge, origin='upper',
+               extent=[dCstep, dCstep*nstep, nstep, 1],
+               aspect='auto')
+    lbl = plt.colorbar()
+    lbl.set_label('[Farad]', rotation=270, labelpad=15)
+
+    return dC_Bridge
+    
+    
 
 if __name__ == '__main__':
     o = voltageDifference()
@@ -211,7 +296,6 @@ if __name__ == '__main__':
     voltageDifference_CICLO()
     
     matr = S2M.getMatrix().astype(np.float) # valori simulati su Spice
-    
     error = (diff_m - matr)
     
     mse = np.mean((diff_m - matr)**2)     # Mean Square Error
@@ -220,3 +304,6 @@ if __name__ == '__main__':
     quantization()
 
     plotGraph()
+    
+    Vab = W_Bridge()
+    get_dC(Vab, C_value[0])
