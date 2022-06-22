@@ -50,6 +50,22 @@ V2_den_m = np.zeros(nstep)
 V1_m = np.zeros([nstep,nstep])
 V2_m = np.zeros(nstep)
 
+# complex
+
+V1_num_mc = np.zeros([nstep,nstep], dtype=complex)
+V2_num_mc = np.zeros(nstep, dtype=complex)
+
+V1_den_mc = np.zeros([nstep,nstep], dtype=complex)
+V2_den_mc = np.zeros(nstep, dtype=complex)
+
+V1_mc = np.zeros([nstep,nstep], dtype=complex)
+V2_mc = np.zeros(nstep, dtype=complex)
+
+diff_mc = np.zeros([nstep,nstep], dtype=complex)
+
+
+
+
 diff_m = np.zeros([nstep,nstep])
 ii = np.arange(nstep);
 
@@ -139,7 +155,7 @@ def quantization():             # https://en.wikipedia.org/wiki/Quantization_(si
     plt.show()
 
     # NOISE
-    noise = np.random.uniform(-.1, .1, sinewave.shape)
+    noise = np.random.uniform(-.2, .2, sinewave.shape)
     sinewave_noised = sinewave + noise
     
     plt.figure(figsize=(12,8))
@@ -186,7 +202,31 @@ def voltageDifference_CICLO():
             V2_num_m[i] = w * R * C_value[i];
             V2_den_m[i] = np.sqrt(1 + pow(w,2) * pow(R,2) * pow(C_value[i],2));
             V2_m[i] = Vin * V2_num_m[i] /V2_den_m[i];
-            diff_m[i,j] = (V1_m[i,j]-V2_m[i]);    
+            diff_m[i,j] = (V1_m[i,j]-V2_m[i]);
+            
+            
+def voltageDifference_fasore():
+    for i in range(nstep):
+        for j in range(nstep):
+            V1_num_mc[i,j] = w * R * (C_value[i] + dC_value[i,j]);
+            V1_den_mc[i,j] = - 1j + w * R * (C_value[i]+dC_value[i,j])
+            V1_mc[i,j] = Vin * V1_num_mc[i,j] / V1_den_mc[i,j];
+            V2_num_mc[i] = w * R * C_value[i];
+            V2_den_mc[i] = - 1j + w * R * C_value[i]
+            V2_mc[i] = Vin * V2_num_mc[i] /V2_den_mc[i];
+            diff_mc[i,j] = (V1_mc[i,j]-V2_mc[i]);
+    
+    plt.imshow(abs(diff_mc), origin='upper',
+               extent=[dCstep, dCstep*nstep, nstep, 1],
+               aspect='auto')
+    lbl = plt.colorbar()
+    lbl.set_label('[v]', rotation=270, labelpad=15)
+    
+    plt.imshow(np.angle(diff_mc), origin='upper',
+           extent=[dCstep, dCstep*nstep, nstep, 1],
+           aspect='auto')
+    lbl = plt.colorbar()
+    lbl.set_label('[v]', rotation=270, labelpad=15)
             
             
 def plotGraph():
