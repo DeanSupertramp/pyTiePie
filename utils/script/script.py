@@ -20,8 +20,10 @@ Fs = 100e6  # Sampling rate 100 MSa/s
 Ts = 1/Fs   # Sampling time
 
 # Input Signal
+f_vec = np.arange(10000, 110000, 5000)
 f = 55000.0
 w = 2*np.pi*f
+w_vec = np.arange(2*np.pi*f_vec[0], 2*np.pi*f_vec[10], 2*np.pi*5000)
 Vin = 10
 n_period = 1
 period = np.round((1/f)*n_period*Fs).astype(int)
@@ -63,6 +65,18 @@ V2_mc = np.zeros(nstep, dtype=complex)
 
 diff_mc = np.zeros([nstep,nstep], dtype=complex)
 
+# 3-D
+
+V1_num_mc_w = np.zeros([nstep,nstep, 10], dtype=complex)
+V2_num_mc_w = np.zeros([nstep, 10], dtype=complex)
+
+V1_den_mc_w = np.zeros([nstep,nstep, 10], dtype=complex)
+V2_den_mc_w = np.zeros([nstep, 10], dtype=complex)
+
+V1_mc_w = np.zeros([nstep,nstep, 10], dtype=complex)
+V2_mc_w = np.zeros([nstep, 10], dtype=complex)
+
+diff_mc_w = np.zeros([nstep,nstep, 10], dtype=complex)
 
 
 
@@ -215,19 +229,49 @@ def voltageDifference_fasore():
             V2_den_mc[i] = - 1j + w * R * C_value[i]
             V2_mc[i] = Vin * V2_num_mc[i] /V2_den_mc[i];
             diff_mc[i,j] = (V1_mc[i,j]-V2_mc[i]);
+            
+    for i in range(nstep):
+        for j in range(nstep):
+            for k in range(len(w_vec)-1):
+                V1_num_mc_w[i, j, k] = w_vec[k] * R * (C_value[i] + dC_value[i,j]);
+                V1_den_mc_w[i, j, k] = - 1j + w_vec[k] * R * (C_value[i]+dC_value[i,j])
+                V1_mc_w[i, j, k] = Vin * V1_num_mc_w[i,j, k] / V1_den_mc_w[i,j, k];
+                V2_num_mc_w[i, k] = w_vec[k] * R * C_value[i];
+                V2_den_mc_w[i, k] = - 1j + w_vec[k] * R * C_value[i]
+                V2_mc_w[i, k] = Vin * V2_num_mc_w[i, k] /V2_den_mc_w[i, k];
+                diff_mc_w[i,j, k] = (V1_mc_w[i,j, k]-V2_mc_w[i, k]);        
     
+# module of the voltage difference
+    plt.figure()
+    plt.title("Module of the voltage difference - [abs(diff)]")
+    plt.ylabel('Cap Value [pF]')
+    plt.xlabel('dC')    
     plt.imshow(abs(diff_mc), origin='upper',
                extent=[dCstep, dCstep*nstep, nstep, 1],
                aspect='auto')
     lbl = plt.colorbar()
     lbl.set_label('[v]', rotation=270, labelpad=15)
     
+    plt.figure()
+    plt.title("Phase Difference")
+    plt.ylabel('Cap Value [pF]')
+    plt.xlabel('dC') 
     plt.imshow(np.angle(diff_mc), origin='upper',
            extent=[dCstep, dCstep*nstep, nstep, 1],
            aspect='auto')
     lbl = plt.colorbar()
+    lbl.set_label('[phase]', rotation=270, labelpad=15)
+    
+# Difference of voltage modules    
+    plt.figure()
+    plt.title("Difference of voltage modules - abs(V1) - abs(V2)")
+    plt.ylabel('Cap Value [pF]')
+    plt.xlabel('dC')    
+    plt.imshow((abs(V1_mc) - abs(V2_mc)), origin='upper',
+               extent=[dCstep, dCstep*nstep, nstep, 1],
+               aspect='auto')
+    lbl = plt.colorbar()
     lbl.set_label('[v]', rotation=270, labelpad=15)
-            
             
 def plotGraph():
     plt.figure()
@@ -327,7 +371,6 @@ def get_dC(Vab, Cair):
     lbl.set_label('[Farad]', rotation=270, labelpad=15)
 
     return dC_Bridge
-    
     
 
 if __name__ == '__main__':
