@@ -231,12 +231,32 @@ def surface_plot (matrix, **kwargs):
     # x is cols, y is rows
     #(x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
     (x, y) = np.meshgrid(C_value, 1/dC_value[0])
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    fig.suptitle('Absolute voltage differences by varying the frequency')
-    for i in range(5):
-        surf = ax.plot_surface(x, y, matrix[i], **kwargs)
-    return (fig, ax, surf)            
+    fig_s = plt.figure()
+    ax = fig_s.add_subplot(111, projection='3d')
+    fig_s.suptitle('Absolute voltage differences by varying the frequency')
+    for s in range(3):
+        surf = ax.plot_surface(x, y, matrix[:,:,s], **kwargs)
+        #surf = ax.plot_surface(x, y, abs(diff_mc_w_out)[:,:,s])
+
+    return (fig_s, ax, surf)            
+
+
+
+
+
+# import numpy as np
+# import matplotlib.pyplot as plt
+# from mpl_toolkits.mplot3d import Axes3D
+
+# def surface_plot (matrix, **kwargs):
+#     # acquire the cartesian coordinate matrices from the matrix
+#     # x is cols, y is rows
+#     (x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
+#     fig = plt.figure()
+#     ax = fig.add_subplot(111, projection='3d')
+#     surf = ax.plot_surface(x, y, matrix[:,:,0], **kwargs)
+#     return (fig, ax, surf)
+
 
 
 
@@ -447,16 +467,15 @@ if __name__ == '__main__':
 
     plotGraph()
         
-    diff_mc, diff_mc_w = voltageDifference_fasore()
+    diff_mc_out, diff_mc_w_out = voltageDifference_fasore()
 
-
-    (fig, ax, surf) = surface_plot(abs(diff_mc_w), cmap=plt.cm.coolwarm)
-    fig.colorbar(surf, pad = 0.15) # use pad for separate to plot
+    (fig_s, ax, surf) = surface_plot(abs(diff_mc_w_out), cmap=plt.cm.coolwarm)
+    fig_s.colorbar(surf, pad = 0.15) # use pad for separate to plot
     ax.set_xlabel('C [pF]')
     ax.set_ylabel('dC')
     ax.set_zlabel('Voltage Difference [V]')
     plt.show()
-
     
+        
     Vab = W_Bridge()
     get_dC(Vab, C_value[0])
