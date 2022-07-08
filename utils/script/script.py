@@ -11,89 +11,90 @@ from matplotlib import pyplot as plt
 
 import logSpice2Matrix as S2M
 from mpl_toolkits.mplot3d import Axes3D
+from .init import * # analysis:ignore
 
+# # ADC Parameter
+# Fs = 100e6  # Sampling rate 100 MSa/s
+# Ts = 1/Fs   # Sampling time
+# N = 14 # n bit ADC
 
-# ADC Parameter
-Fs = 100e6  # Sampling rate 100 MSa/s
-Ts = 1/Fs   # Sampling time
-N = 14 # n bit ADC
+# # Input Signal
+# f_vec = np.arange(10000, 110000, 5000)
+# f = 55000.0
+# w = 2*np.pi*f
+# w_vec = np.arange(2*np.pi*f_vec[0], 2*np.pi*f_vec[f_vec.size-1], 2*np.pi*5000)
+# Vin = 10
+# n_period = 1
+# period = np.round((1/f)*n_period*Fs).astype(int)
+# t = np.arange(Fs+1)*Ts # Time vector
+# sinewave = Vin*np.sin(2*np.pi*f*t)  # Original signal
 
-# Input Signal
-f_vec = np.arange(10000, 110000, 5000)
-f = 55000.0
-w = 2*np.pi*f
-w_vec = np.arange(2*np.pi*f_vec[0], 2*np.pi*f_vec[f_vec.size-1], 2*np.pi*5000)
-Vin = 10
-n_period = 1
-period = np.round((1/f)*n_period*Fs).astype(int)
-t = np.arange(Fs+1)*Ts # Time vector
-sinewave = Vin*np.sin(2*np.pi*f*t)  # Original signal
+# q = (Vin-(-Vin))/(2**N) # quantization step
 
-nstep = 10
-dCstep = 100
-init_dCstep = 100
-fstep = len(f_vec)
-wstep = len(w_vec)
+# nstep = 10
+# dCstep = 100
+# init_dCstep = 100
+# fstep = len(f_vec)
+# wstep = len(w_vec)
 
-# Circuit Parameter
-C = 1e-12
-dC = C/dCstep
-R = 1/(w*C)
+# # Circuit Parameter
+# C = 1e-12
+# dC = C/dCstep
+# R = 1/(w*C)
 
-# Init value
-C_value = np.zeros(nstep)
-dC_value = np.zeros([nstep,nstep])
-V1_num_m = np.zeros([nstep,nstep])
-V2_num_m = np.zeros(nstep);
-V1_den_m = np.zeros([nstep,nstep])
-V2_den_m = np.zeros(nstep)
-V1_m = np.zeros([nstep,nstep])
-V2_m = np.zeros(nstep)
-diff_m = np.zeros([nstep,nstep])
-ii = np.arange(nstep);
+# # Init value
+# C_value = np.zeros(nstep)
+# dC_value = np.zeros([nstep,nstep])
+# V1_num_m = np.zeros([nstep,nstep])
+# V2_num_m = np.zeros(nstep);
+# V1_den_m = np.zeros([nstep,nstep])
+# V2_den_m = np.zeros(nstep)
+# V1_m = np.zeros([nstep,nstep])
+# V2_m = np.zeros(nstep)
+# diff_m = np.zeros([nstep,nstep])
+# ii = np.arange(nstep);
 
-# Complex
-V1_num_mc = np.zeros([nstep,nstep], dtype=complex)
-V2_num_mc = np.zeros(nstep, dtype=complex)
-V1_den_mc = np.zeros([nstep,nstep], dtype=complex)
-V2_den_mc = np.zeros(nstep, dtype=complex)
-V1_mc = np.zeros([nstep,nstep], dtype=complex)
-V2_mc = np.zeros(nstep, dtype=complex)
-diff_mc = np.zeros([nstep,nstep], dtype=complex)
+# # Complex
+# V1_num_mc = np.zeros([nstep,nstep], dtype=complex)
+# V2_num_mc = np.zeros(nstep, dtype=complex)
+# V1_den_mc = np.zeros([nstep,nstep], dtype=complex)
+# V2_den_mc = np.zeros(nstep, dtype=complex)
+# V1_mc = np.zeros([nstep,nstep], dtype=complex)
+# V2_mc = np.zeros(nstep, dtype=complex)
+# diff_mc = np.zeros([nstep,nstep], dtype=complex)
 
-# 3-D
-V1_num_mc_w = np.zeros([nstep,nstep, wstep], dtype=complex)
-V2_num_mc_w = np.zeros([nstep, wstep], dtype=complex)
-V1_den_mc_w = np.zeros([nstep,nstep, wstep], dtype=complex)
-V2_den_mc_w = np.zeros([nstep, wstep], dtype=complex)
-V1_mc_w = np.zeros([nstep,nstep, wstep], dtype=complex)
-V2_mc_w = np.zeros([nstep, wstep], dtype=complex)
-diff_mc_w = np.zeros([nstep,nstep, wstep], dtype=complex)
+# # 3-D
+# V1_num_mc_w = np.zeros([nstep,nstep, wstep], dtype=complex)
+# V2_num_mc_w = np.zeros([nstep, wstep], dtype=complex)
+# V1_den_mc_w = np.zeros([nstep,nstep, wstep], dtype=complex)
+# V2_den_mc_w = np.zeros([nstep, wstep], dtype=complex)
+# V1_mc_w = np.zeros([nstep,nstep, wstep], dtype=complex)
+# V2_mc_w = np.zeros([nstep, wstep], dtype=complex)
+# diff_mc_w = np.zeros([nstep,nstep, wstep], dtype=complex)
 
-# Spice matrix
-matr = np.zeros([nstep,nstep])
+# # Spice matrix
+# matr = np.zeros([nstep,nstep])
 
-# Bridge parameter
-B_num = np.zeros([nstep,nstep])
-B_den = np.zeros([nstep,nstep])
-A_num = np.zeros(nstep)
-A_den = np.zeros([nstep,nstep])
-Vab1_abs = np.zeros([nstep,nstep])
+# # Bridge parameter
+# B_num = np.zeros([nstep,nstep])
+# B_den = np.zeros([nstep,nstep])
+# A_num = np.zeros(nstep)
+# A_den = np.zeros([nstep,nstep])
+# Vab1_abs = np.zeros([nstep,nstep])
 
-a = np.zeros([nstep,nstep])
-#b = np.zeros(nstep)
-c = np.zeros([nstep,nstep])
-#d = np.zeros(nstep)
-e = np.zeros(nstep)
-dC_Bridge = np.zeros([nstep,nstep])
-dC_Bridge_num = np.zeros([nstep,nstep])
-dC_Bridge_den = np.zeros([nstep,nstep])
+# a = np.zeros([nstep,nstep])
+# #b = np.zeros(nstep)
+# c = np.zeros([nstep,nstep])
+# #d = np.zeros(nstep)
+# e = np.zeros(nstep)
+# dC_Bridge = np.zeros([nstep,nstep])
+# dC_Bridge_num = np.zeros([nstep,nstep])
+# dC_Bridge_den = np.zeros([nstep,nstep])
 
 
 def quantization():             
 # https://en.wikipedia.org/wiki/Quantization_(signal_processing)
 # https://github.com/GuitarsAI/ADSP_Tutorials/blob/master/ADSP_01_Quantization.ipynb    
-    q = (Vin-(-Vin))/(2**N)
     # Encode
     sinewave_quant_rise_ind = np.floor(sinewave/q)
     sinewave_quant_tread_ind = np.round(sinewave/q)
@@ -107,6 +108,7 @@ def quantization():
     # Quantization Error
     quant_error_tread = sinewave_quant_tread_rec - sinewave
     quant_error_rise = sinewave_quant_rise_rec - sinewave
+
     
     # NOISE
     noise = np.random.uniform(-.2, .2, sinewave.shape)
@@ -176,7 +178,7 @@ def quantization():
     plt.hist(quant_error_rise, bins=bins)
     plt.show()
 
-    # NOISE
+    # NOISE PLOT
     plt.figure(figsize=(12,8))
     #plt.subplot(2,1,1)
     # fig, ax = plt.subplots(1, figsize=(10,6))
@@ -226,22 +228,25 @@ def voltageDifference_CICLO():
 
 
 
-
 def surface_plot (matrix, **kwargs):
     # x is cols, y is rows
     #(x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
-    (x, y) = np.meshgrid(C_value, 1/dC_value[0])
+    (x, y) = np.meshgrid(C_value, dC_value[0])
     fig_s = plt.figure()
     ax = fig_s.add_subplot(111, projection='3d')
     fig_s.suptitle('Absolute voltage differences by varying the frequency')
-    for s in range(3):
+    for s in range(0, len(w_vec), 5):
         surf = ax.plot_surface(x, y, matrix[:,:,s], **kwargs)
         #surf = ax.plot_surface(x, y, abs(diff_mc_w_out)[:,:,s])
+    return (fig_s, ax, surf)      
 
-    return (fig_s, ax, surf)            
-
-
-
+    plt.figure()
+    plt.title("Absolute voltage differences at specific frequency")
+    plt.ylabel('Cap Value [pF]')
+    plt.xlabel('dC')    
+    plt.imshow(abs(diff_mc_w_out)[:,:,0])
+    lbl = plt.colorbar()
+    lbl.set_label('[v]', rotation=270, labelpad=15)      
 
 
 # import numpy as np
@@ -256,11 +261,6 @@ def surface_plot (matrix, **kwargs):
 #     ax = fig.add_subplot(111, projection='3d')
 #     surf = ax.plot_surface(x, y, matrix[:,:,0], **kwargs)
 #     return (fig, ax, surf)
-
-
-
-
-
 
 def voltageDifference_fasore():
     for i in range(nstep):
@@ -284,8 +284,7 @@ def voltageDifference_fasore():
                 V2_mc_w[i, k] = Vin * V2_num_mc_w[i, k] /V2_den_mc_w[i, k]
                 diff_mc_w[i,j, k] = (V1_mc_w[i,j, k]-V2_mc_w[i, k])
      
-        
-    
+   
     # Vin_fasore = Vin * np.exp(1j * np.angle(sinewave))
     
     # for i in range(nstep):
@@ -354,7 +353,103 @@ def voltageDifference_fasore():
     plt.legend(title = "dC", loc=1, prop={'size': 7})
     
     return diff_mc, diff_mc_w
+
             
+def signal_out():
+    S1_mc= abs(V1_mc[0,0]) * np.sin(w*t[:period+1] + np.angle(V1_mc[0,0]))
+    S2_mc= abs(V2_mc[0]) * np.sin(w*t[:period+1] + np.angle(V2_mc[0]))
+       
+    # NOISE
+    noise = np.random.uniform(-.2, .2, S1_mc.shape)
+    S1_noised = S1_mc + noise
+    S2_noised = S2_mc + noise
+    # ADC
+    # ----- S1 -----
+    # Encode S1
+    S1_noised_quant_rise_ind = np.floor(S1_noised/q)
+    S1_noised_quant_tread_ind = np.round(S1_noised/q)
+    # Decode S1
+    S1_noised_riseADC = S1_noised_quant_rise_ind * q + q/2
+    S1_noised_treadADC = S1_noised_quant_tread_ind * q
+    # ----- S2 -----
+    # Encode S2
+    S2_noised_quant_rise_ind = np.floor(S2_noised/q)
+    S2_noised_quant_tread_ind = np.round(S2_noised/q)
+    # Decode S2
+    S2_noised_riseADC = S2_noised_quant_rise_ind * q + q/2
+    S2_noised_treadADC = S2_noised_quant_tread_ind * q
+    
+    # Stimo il fasore S1
+    alpha_S1 = np.sum(S1_noised_riseADC) * np.cos(w*t[:period+1] + np.angle(V1_mc[0,0])) \
+        / np.sum( (np.cos(w*t[:period+1] + np.angle(V1_mc[0,0])))**2 )
+    
+    beta_S1 = - np.sum(S1_noised_riseADC) * np.sin(w*t[:period+1] + np.angle(V1_mc[0,0])) \
+        / np.sum( (np.sin(w*t[:period+1] + np.angle(V1_mc[0,0])))**2 )
+        
+    S1_ph = alpha_S1 + 1j*beta_S1
+    
+    # Stimo il fasore S2
+    alpha_S2 = np.sum(S2_noised_riseADC) * np.cos(w*t[:period+1] + np.angle(V2_mc[0])) \
+        / np.sum( (np.cos(w*t[:period+1] + np.angle(V2_mc[0])))**2 )
+    
+    beta_S2 = - np.sum(S2_noised_riseADC) * np.sin(w*t[:period+1] + np.angle(V2_mc[0])) \
+        / np.sum( (np.sin(w*t[:period+1] + np.angle(V2_mc[0])))**2 )
+        
+    S2_ph = alpha_S2 + 1j*beta_S2
+    
+    plt.figure()
+    #plt.plot(t[:period+1], abs(S1_ph[:period+1]), label='S1_ph')
+    #plt.plot(t[:period+1], abs(S2_ph[:period+1]), label='S2_ph')
+    plt.plot(t[:period+1], abs(S2_ph[:period+1]) - abs(S1_ph[:period+1]), label='difference')        
+    plt.legend()
+    
+    # Calcolo DS
+    DS = S2_mc - S1_mc
+    DS_noise = S2_noised - S1_noised
+    DS_noise_ADC = S2_noised_riseADC - S1_noised_riseADC
+    
+    # Stimo il fasore DS
+    alpha_DS = np.sum(DS_noise_ADC) * np.cos(w*t[:period+1] + np.angle(DS_noise_ADC[0])) \
+        / np.sum( (np.cos(w*t[:period+1] + np.angle(DS_noise_ADC[0])))**2 )
+    
+    beta_DS = - np.sum(DS_noise_ADC) * np.sin(w*t[:period+1] + np.angle(DS_noise_ADC[0])) \
+        / np.sum( (np.sin(w*t[:period+1] + np.angle(DS_noise_ADC[0])))**2 )
+        
+    DS_ph = alpha_DS + 1j*beta_DS
+    
+    plt.figure()
+    plt.plot(t[:period+1], abs(S2_ph[:period+1]) - abs(S1_ph[:period+1]), label='difference of phasors [S2_ph-S1_ph]')
+    plt.plot(t[:period+1], abs(DS_ph[:period+1]), label='phasor difference [DS_ph]')                
+    plt.legend()
+
+    plt.figure()
+    plt.title("S1_mc, S2_mc and original signal")
+    plt.ylabel('Voltage Difference [V]')
+    plt.xlabel('Time [s]')
+    plt.plot(t[:period+1], sinewave[:period+1], label='Original Signal')
+    plt.plot(t[:period+1], S1_mc, linestyle='dashed', lw=2, label='Signal V1 from RC Circuit')
+    plt.plot(t[:period+1], S2_mc, linestyle='dashed', alpha=0.5, lw=2, label='Signal V2 from RC Circuit')
+    plt.legend()
+
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.title("Voltage difference DS with quantization and noise", fontsize=10, fontweight = 'bold')
+    plt.ylabel('Voltage Difference [V]')
+    plt.xlabel('Time [s]')
+    plt.plot(t[:period+1], DS_noise_ADC[:period+1], label='DS + noise + quantization')
+    plt.plot(t[:period+1], DS_noise[:period+1], label='DS + noise')
+    plt.plot(t[:period+1], DS[:period+1], linestyle='dashed', label='DS')
+    plt.legend()
+    plt.subplot(2,1,2)
+    plt.title("Voltage difference DS with quantization and noise - Error", fontsize=10, pad=17, fontweight = 'bold')
+    plt.ylabel('Voltage Difference error [V]')
+    plt.xlabel('Time [s]')
+    plt.plot(t[:period+1], DS_noise_ADC[:period+1] - DS[:period+1], label='DS + noise + quantization (error)')
+    plt.plot(t[:period+1], DS_noise[:period+1] - DS[:period+1], label='DS + noise (error)')
+    plt.subplots_adjust(hspace = 0.8)
+    plt.legend()
+
+
 def plotGraph():
     plt.figure()
     fig, axs = plt.subplots(2)
@@ -452,6 +547,13 @@ def get_dC(Vab, Cair):
     return dC_Bridge
     
 
+
+
+
+
+
+
+
 if __name__ == '__main__':
     o = voltageDifference()
     ciclo()
@@ -471,11 +573,12 @@ if __name__ == '__main__':
 
     (fig_s, ax, surf) = surface_plot(abs(diff_mc_w_out), cmap=plt.cm.coolwarm)
     fig_s.colorbar(surf, pad = 0.15) # use pad for separate to plot
-    ax.set_xlabel('C [pF]')
     ax.set_ylabel('dC')
+    ax.set_xlabel('C [pF]')
     ax.set_zlabel('Voltage Difference [V]')
     plt.show()
     
+    signal_out()
         
-    Vab = W_Bridge()
-    get_dC(Vab, C_value[0])
+    # Vab = W_Bridge()
+    # get_dC(Vab, C_value[0])
