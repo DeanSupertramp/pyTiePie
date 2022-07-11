@@ -181,6 +181,9 @@ def signal_out():
     DS_ph = alpha_DS + 1j*beta_DS
     
     plt.figure()
+    plt.title("RC series Phasors")
+    plt.ylabel('Voltage difference abs [V]')
+    plt.xlabel('Time [s]')
     plt.plot(t[:period+1], abs(S2_ph[:period+1]) - abs(S1_ph[:period+1]), label='difference of phasors [S2_ph-S1_ph]')
     plt.plot(t[:period+1], abs(DS_ph[:period+1]), label='phasor difference [DS_ph]')                
     plt.legend()
@@ -211,3 +214,4 @@ def signal_out():
     plt.plot(t[:period+1], DS_noise[:period+1] - DS[:period+1], label='DS + noise (error)')
     plt.subplots_adjust(hspace = 0.8)
     plt.legend()
+    

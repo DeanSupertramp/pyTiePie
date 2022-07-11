@@ -93,6 +93,9 @@ def signal_out_bridge():
     Vout_ph = alpha_Vout_nq + 1j*beta_Vout_nq
     
     plt.figure()
+    plt.title("Bridge Vout")
+    plt.ylabel('Vout [V]')
+    plt.xlabel('Time [s]')
     plt.plot(t[:period+1], abs(Vout_ph), label='Vout_ph + noise + quantization')
     plt.plot(t[:period+1], abs(Vout), label='Vout_ph')        
-    plt.legend()
+    plt.legend(loc = 1)
