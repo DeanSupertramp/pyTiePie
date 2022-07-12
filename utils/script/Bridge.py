@@ -90,12 +90,13 @@ def signal_out_bridge():
     beta_Vout_nq = - np.sum(Vout_noised_riseADC) * np.sin(w*t[:period+1] + np.angle(Vout_noised_riseADC)) \
         / np.sum( (np.sin(w*t[:period+1] + np.angle(Vout_noised_riseADC)))**2 )
         
-    Vout_ph = alpha_Vout_nq + 1j*beta_Vout_nq
+    Vout_ph_nq = alpha_Vout_nq + 1j*beta_Vout_nq
     
     plt.figure()
     plt.title("Bridge Vout")
     plt.ylabel('Vout [V]')
     plt.xlabel('Time [s]')
-    plt.plot(t[:period+1], abs(Vout_ph), label='Vout_ph + noise + quantization')
-    plt.plot(t[:period+1], abs(Vout), label='Vout_ph')        
+    #plt.plot(t[:period+1], abs(Vout_ph_nq), label='Vout_ph + noise + quantization')
+    plt.plot(t[:period+1], abs(Vout_ph), label='Vout_ph')        
+    #plt.plot(t[:period+1], abs(Vout), label='Vout') 
     plt.legend(loc = 1)
