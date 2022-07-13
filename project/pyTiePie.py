@@ -9,6 +9,26 @@ from matplotlib import pyplot as plt
 from array import array
 # from math import sin
 import Z_meter
+import argparse
+from MyArgParser import MyArgParser
+
+
+def dummyfunction():
+    print("ciao")
+
+
+# gen.signal_types restituisce maschera in bit dei segnali
+# from libtiepie.utils import signal_type_str # funzione builtin in libtiepie.utils
+# print('  Signal types              : ' + signal_type_str(gen.signal_types))
+# Sub commands configuration
+st = MyArgParser('signalType', description = "select signal type") # check in libtiepie.const
+st.add_argument()
+
+# Add all commands to an instruction set dictionary
+commands = {}
+commands['signalType'] = {'parser': st ,'execution': dummyfunction}
+
+
 
 f0=4e3              #freq. fondamentale
 Nharm=50            # n° armoniche
@@ -129,7 +149,7 @@ def gen_settings():
    )
     if signalType in signal_dict:
         gen.signal_type = signal_dict[signalType]    # ref: https://api.tiepie.com/libtiepie/0.4.3/group___s_t__.html
-
+        # see const.py for signal definitions and types
         if signalType == "ARBITRARY":
             # Select frequency mode:
             gen.frequency_mode = libtiepie.FM_SAMPLEFREQUENCY
@@ -154,7 +174,8 @@ def gen_settings():
         # Print generator info:
         # print_device_info(gen)
 
-        if signalType == "SINE":
+        # if signalType == "DC":
+        else:
             # Set frequency:
             gen.frequency = 1e3  # 1 kHz
             # Set amplitude:
@@ -163,6 +184,8 @@ def gen_settings():
             gen.offset = 0  # 0 V
             # Enable output:
             gen.output_on = True
+            
+            
         print("signal type selected: ", signalType)
         return True
     else:
