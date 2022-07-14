@@ -3,6 +3,7 @@ import time
 # import os
 import sys
 import libtiepie
+from libtiepie.const import SIGNAL_TYPES
 # from printinfo import *
 import numpy as np
 from matplotlib import pyplot as plt
@@ -13,21 +14,30 @@ import argparse
 from MyArgParser import MyArgParser
 
 
-def dummyfunction():
-    print("ciao")
+def dummycommand(args):
+    print('Running %s command with args:' % dummycommand.__name__,*args.values(),sep=' ')
+    # vars(commands.get('set')['parser'].parse_args(l[1:]))
+    if args["signal"].capitalize() in SIGNAL_TYPES.values() or args["signal"].upper() in SIGNAL_TYPES.values():
+        print(args["signal"])
 
 
 # gen.signal_types restituisce maschera in bit dei segnali
 # from libtiepie.utils import signal_type_str # funzione builtin in libtiepie.utils
 # print('  Signal types              : ' + signal_type_str(gen.signal_types))
-# Sub commands configuration
-st = MyArgParser('signalType', description = "select signal type") # check in libtiepie.const
-st.add_argument()
+# Commands configuration
+tiepie_setSignal = MyArgParser('set', description = "select signal") # check in libtiepie.const
+tiepie_setSignal.add_argument('signal', type=str, help='Signal Type', required=True) 
+tiepie_setSignal.add_argument('freq', type=int, help='Frequency', required=True)
+tiepie_setSignal.add_argument('offset', type=float, help='offset') 
+
+
+tiepie_setDC = MyArgParser('setDC', description = "set DC") # check in libtiepie.const
+tiepie_setDC.add_argument('offset', type=float, help='offset') 
 
 # Add all commands to an instruction set dictionary
 commands = {}
-commands['signalType'] = {'parser': st ,'execution': dummyfunction}
-
+commands['set'] = {'parser': tiepie_setSignal ,'execution': dummycommand}
+commands['setDC'] = {'parser': tiepie_setDC ,'execution': dummycommand}
 
 
 f0=4e3              #freq. fondamentale
@@ -37,6 +47,34 @@ fS=1e8              # in [Hz] 100 MHz
 
 # s, lock_in, params,__,__ = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)
 segnale, lock_in, params = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
+
+
+# Parse a line and in case execute a command
+def process(line):
+    sline = line.strip() # string
+    if not sline:
+        return True
+    l = sline.split() # list
+    the_command = l[0]
+    if the_command == 'exit':
+        return False
+    if the_command in commands:
+        parser = commands.get(the_command)['parser']
+        funzione = commands.get(the_command)['execution']
+        try:
+            argomenti = parser.parse_args(l[1:])
+            # do something with this command and these arguments
+            funzione(vars(argomenti)) # vars return a dict
+        except Exception as message:
+            print('%s: error: %s' % (the_command,message))
+    else:
+        print('%s: command not found' % the_command)
+    return True
+
+
+def prompt():
+    return ">>"
+
 
 def tiepieList():
     if len(libtiepie.device_list) > 0:
@@ -253,6 +291,10 @@ scp, gen = tiepieInit()
 Nsamples=segnale.size
 
 if __name__ == '__main__':
+    
+    while process(input(prompt())):
+        pass
+    
     if scp and gen:
         try:
             if gen_settings():
