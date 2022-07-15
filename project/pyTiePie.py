@@ -3,7 +3,9 @@ import time
 # import os
 import sys
 import libtiepie
-from libtiepie.const import SIGNAL_TYPES
+from libtiepie.const import SIGNAL_TYPES, STM_AMPLITUDE
+from libtiepie.const import ST_UNKNOWN, ST_SINE, ST_TRIANGLE, ST_SQUARE, ST_DC, ST_NOISE, ST_ARBITRARY, ST_PULSE
+
 # from printinfo import *
 import numpy as np
 from matplotlib import pyplot as plt
@@ -14,25 +16,102 @@ import argparse
 from MyArgParser import MyArgParser
 
 
+# list out keys and values separately
+# key_list = list(SIGNAL_TYPES.keys())
+# val_list = list(SIGNAL_TYPES.values())
+
 def dummycommand(args):
     print('Running %s command with args:' % dummycommand.__name__,*args.values(),sep=' ')
-    # vars(commands.get('set')['parser'].parse_args(l[1:]))
-    if args["signal"].capitalize() in SIGNAL_TYPES.values() or args["signal"].upper() in SIGNAL_TYPES.values():
-        print(args["signal"])
+    # controllo se il comando è presente tra i segnali della libreria
+    # ref: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
+    if args["signal"].capitalize() in SIGNAL_TYPES.values():
+        print("Command", args["signal"].capitalize(), "found!")
+        k2v = list(SIGNAL_TYPES.keys())[list(SIGNAL_TYPES.values()).index(args["signal"].capitalize())] # key to value      
+    elif args["signal"].upper() in SIGNAL_TYPES.values(): # Only DC signal
+        print("Command", args["signal"].upper(), "found!")
+        k2v = list(SIGNAL_TYPES.keys())[list(SIGNAL_TYPES.values()).index(args["signal"].upper())]         
+
+    gen.signal_type = SIGNAL_TYPES[k2v]    # ref: https://api.tiepie.com/libtiepie/0.4.3/group___s_t__.html
+
+    # controllo se il segnale accetta il parametro ampiezza
+    if bool(STM_AMPLITUDE & k2v ): # MASK
+        print("Set Amplitude")
+        
+        
+        
+        
+def gen_settings():
+    global signalType
+    # ********** Generator settings: **********
+    # Set signal type:
+    signalType = input("set signal type: \n \
+   - UNKNOWN \n \
+   - SINE \n \
+   - TRIANGLE \n \
+   - SQUARE \n \
+   - DC \n \
+   - NOISE \n \
+   - ARBITRARY \n"
+   )
+    if signalType in signal_dict:
+        gen.signal_type = signal_dict[signalType]    # ref: https://api.tiepie.com/libtiepie/0.4.3/group___s_t__.html
+        
+        
+        # see const.py for signal definitions and types
+        if signalType == "ARBITRARY":
+            # Select frequency mode:
+            gen.frequency_mode = libtiepie.FM_SAMPLEFREQUENCY
+            # Set sample frequency:
+            gen.frequency = fS  # 100 MHz
+            # Set amplitude:
+            gen.amplitude = 1 # 1Vpp
+            # Set offset:
+            gen.offset = 0  # 0 V
+            # Enable output:
+            gen.output_on = True
+            gen.mode = libtiepie.GM_BURST_COUNT
+            # Set burst count:
+            gen.burst_count = 1  # 100 periods
+            # Create signal array, and load it into the generator:
+            dataIN= array('f')
+            dataOUT= array('f')
+            
+            for jx in range(segnale.size):
+                dataIN.append(segnale[0,jx])
+            gen.set_data(dataIN)
+        # Print generator info:
+        # print_device_info(gen)
+
+        # if signalType == "DC":
+        else:
+            # Set frequency:
+            gen.frequency = 1e3  # 1 kHz
+            # Set amplitude:
+            gen.amplitude = 1  # 1 V
+            # Set offset:
+            gen.offset = 0  # 0 V
+            # Enable output:
+            gen.output_on = True
+            
+        print("signal type selected: ", signalType)
+        return True
+    else:
+        print("signalType not correct")
+        return False
 
 
 # gen.signal_types restituisce maschera in bit dei segnali
 # from libtiepie.utils import signal_type_str # funzione builtin in libtiepie.utils
 # print('  Signal types              : ' + signal_type_str(gen.signal_types))
 # Commands configuration
-tiepie_setSignal = MyArgParser('set', description = "select signal") # check in libtiepie.const
-tiepie_setSignal.add_argument('signal', type=str, help='Signal Type', required=True) 
-tiepie_setSignal.add_argument('freq', type=int, help='Frequency', required=True)
-tiepie_setSignal.add_argument('offset', type=float, help='offset') 
+tiepie_setSignal = MyArgParser("set", description = "select signal") # check in libtiepie.const
+tiepie_setSignal.add_argument("signal", type=str, help='Signal Type') 
+tiepie_setSignal.add_argument("freq", type=int, help='Frequency')
+tiepie_setSignal.add_argument("offset", type=float, help='offset') 
 
 
-tiepie_setDC = MyArgParser('setDC', description = "set DC") # check in libtiepie.const
-tiepie_setDC.add_argument('offset', type=float, help='offset') 
+tiepie_setDC = MyArgParser("setDC", description = "set DC") # check in libtiepie.const
+tiepie_setDC.add_argument("offsetDC", type=float, help='offset') 
 
 # Add all commands to an instruction set dictionary
 commands = {}
@@ -172,63 +251,7 @@ signal_dict = {"UNKNOWN" : libtiepie.ST_UNKNOWN,        # 0
                "ARBITRARY" : libtiepie.ST_ARBITRARY}    # 32
 
 
-def gen_settings():
-    global signalType
-    # ********** Generator settings: **********
-    # Set signal type:
-    signalType = input("set signal type: \n \
-   - UNKNOWN \n \
-   - SINE \n \
-   - TRIANGLE \n \
-   - SQUARE \n \
-   - DC \n \
-   - NOISE \n \
-   - ARBITRARY \n"
-   )
-    if signalType in signal_dict:
-        gen.signal_type = signal_dict[signalType]    # ref: https://api.tiepie.com/libtiepie/0.4.3/group___s_t__.html
-        # see const.py for signal definitions and types
-        if signalType == "ARBITRARY":
-            # Select frequency mode:
-            gen.frequency_mode = libtiepie.FM_SAMPLEFREQUENCY
-            # Set sample frequency:
-            gen.frequency = fS  # 100 MHz
-            # Set amplitude:
-            gen.amplitude = 1 # 1Vpp
-            # Set offset:
-            gen.offset = 0  # 0 V
-            # Enable output:
-            gen.output_on = True
-            gen.mode = libtiepie.GM_BURST_COUNT
-            # Set burst count:
-            gen.burst_count = 1  # 100 periods
-            # Create signal array, and load it into the generator:
-            dataIN= array('f')
-            dataOUT= array('f')
-            
-            for jx in range(segnale.size):
-                dataIN.append(segnale[0,jx])
-            gen.set_data(dataIN)
-        # Print generator info:
-        # print_device_info(gen)
 
-        # if signalType == "DC":
-        else:
-            # Set frequency:
-            gen.frequency = 1e3  # 1 kHz
-            # Set amplitude:
-            gen.amplitude = 1  # 1 V
-            # Set offset:
-            gen.offset = 0  # 0 V
-            # Enable output:
-            gen.output_on = True
-            
-            
-        print("signal type selected: ", signalType)
-        return True
-    else:
-        print("signalType not correct")
-        return False
     
 
 def acquire_data():

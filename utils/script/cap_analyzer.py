@@ -52,7 +52,7 @@ elif measType == 1:
     start = time.time()
     for j_harm in range(Nharm):
         for l in range(len_time_lockin):
-           # s_harml[j_harm, l] = np.cos(2*np.pi*f0*j_harm*time_lockin[l]+np.pi*(j_harm*(j_harm))/Nharm)
+            s_harml[j_harm, l] = np.cos(2*np.pi*f0*j_harm*time_lockin[l]+np.pi*(j_harm*(j_harm))/Nharm)
             lock_in[j_harm, l] = np.exp(-1j*np.pi*(j_harm*(j_harm-1))/Nharm) \
                 * np.exp(-1j*2*np.pi*f0*j_harm*time_lockin[l]) \
                     / np.sum(pow(s_harml[j_harm], 2))

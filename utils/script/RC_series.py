@@ -119,8 +119,8 @@ def voltageDifference_fasore():
     return diff_mc, diff_mc_w
 
 def signal_out():
-    S1_mc= abs(V1_mc[0,0]) * np.sin(w*t[:period+1] + np.angle(V1_mc[0,0]))
-    S2_mc= abs(V2_mc[0]) * np.sin(w*t[:period+1] + np.angle(V2_mc[0]))
+    S1_mc= abs(V1_mc[0,0]) * np.cos(w*t[:period+1] + np.angle(V1_mc[0,0]))
+    S2_mc= abs(V2_mc[0]) * np.cos(w*t[:period+1] + np.angle(V2_mc[0]))
        
     # NOISE
     noise = np.random.uniform(-.2, .2, S1_mc.shape)
@@ -143,28 +143,31 @@ def signal_out():
     S2_noised_treadADC = S2_noised_quant_tread_ind * q
     
     # Stimo il fasore S1
-    alpha_S1 = np.sum(S1_noised_riseADC) * np.cos(w*t[:period+1] + np.angle(V1_mc[0,0])) \
-        / np.sum( (np.cos(w*t[:period+1] + np.angle(V1_mc[0,0])))**2 )
+    alpha_S1 = np.sum( S1_noised_riseADC * np.cos(w*t[:period+1]) ) \
+        / np.sum( (np.cos(w*t[:period+1] ))**2 )  
     
-    beta_S1 = - np.sum(S1_noised_riseADC) * np.sin(w*t[:period+1] + np.angle(V1_mc[0,0])) \
-        / np.sum( (np.sin(w*t[:period+1] + np.angle(V1_mc[0,0])))**2 )
+    beta_S1 = - np.sum(S1_noised_riseADC * np.sin(w*t[:period+1] ) ) \
+        / np.sum( (np.sin(w*t[:period+1] ))**2 )
         
     S1_ph = alpha_S1 + 1j*beta_S1
     
     # Stimo il fasore S2
-    alpha_S2 = np.sum(S2_noised_riseADC) * np.cos(w*t[:period+1] + np.angle(V2_mc[0])) \
-        / np.sum( (np.cos(w*t[:period+1] + np.angle(V2_mc[0])))**2 )
+    alpha_S2 = np.sum( S2_noised_riseADC * np.cos(w*t[:period+1] ) ) \
+        / np.sum( (np.cos(w*t[:period+1] ))**2 )
     
-    beta_S2 = - np.sum(S2_noised_riseADC) * np.sin(w*t[:period+1] + np.angle(V2_mc[0])) \
-        / np.sum( (np.sin(w*t[:period+1] + np.angle(V2_mc[0])))**2 )
+    beta_S2 = - np.sum(S2_noised_riseADC * np.sin(w*t[:period+1] ) ) \
+        / np.sum( (np.sin(w*t[:period+1] ))**2 )
         
     S2_ph = alpha_S2 + 1j*beta_S2
     
-    plt.figure()
-    #plt.plot(t[:period+1], abs(S1_ph[:period+1]), label='S1_ph')
-    #plt.plot(t[:period+1], abs(S2_ph[:period+1]), label='S2_ph')
-    plt.plot(t[:period+1], abs(S2_ph[:period+1]) - abs(S1_ph[:period+1]), label='difference')        
-    plt.legend()
+    # plt.figure()
+    # #plt.plot(t[:period+1], abs(S1_ph[:period+1]), label='S1_ph')
+    # #plt.plot(t[:period+1], abs(S2_ph[:period+1]), label='S2_ph')
+    # plt.plot(t[:period+1], abs(S2_ph[:period+1]) - abs(S1_ph[:period+1]), label='difference')        
+    # plt.legend()
+    
+    print(abs(S2_ph) - abs(S1_ph))
+    print(np.angle(S2_ph, deg = True) - np.angle(S1_ph, deg = True))
     
     # Calcolo DS
     DS = S2_mc - S1_mc
@@ -172,14 +175,16 @@ def signal_out():
     DS_noise_ADC = S2_noised_riseADC - S1_noised_riseADC
     
     # Stimo il fasore DS
-    alpha_DS = np.sum(DS_noise_ADC) * np.cos(w*t[:period+1] + np.angle(DS_noise_ADC[0])) \
-        / np.sum( (np.cos(w*t[:period+1] + np.angle(DS_noise_ADC[0])))**2 )
+    alpha_DS = np.sum(DS_noise_ADC * np.cos(w*t[:period+1] ) ) \
+        / np.sum( (np.cos(w*t[:period+1] ))**2 )
     
-    beta_DS = - np.sum(DS_noise_ADC) * np.sin(w*t[:period+1] + np.angle(DS_noise_ADC[0])) \
-        / np.sum( (np.sin(w*t[:period+1] + np.angle(DS_noise_ADC[0])))**2 )
+    beta_DS = - np.sum(DS_noise_ADC * np.sin(w*t[:period+1] ) ) \
+        / np.sum( (np.sin(w*t[:period+1] ))**2 )
         
     DS_ph = alpha_DS + 1j*beta_DS
-    
+    print(abs(DS_ph))
+    print(np.angle(DS_ph, deg = True))
+
     plt.figure()
     plt.title("RC series Phasors")
     plt.ylabel('Voltage difference abs [V]')
