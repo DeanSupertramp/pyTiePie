@@ -25,8 +25,8 @@ switch measType
         freq=f0;
     case 1
         for j_harm=1:Nharm
-            s_harml(j_harm,:)=(cos(2*pi*f0*j_harm*time_lockin+pi*(j_harm*(j_harm-1))/Nharm));
-            lock_in(j_harm,:)=exp(-1i*pi*(j_harm*(j_harm-1))/Nharm)*exp(-1i*2*pi*f0*j_harm*time_lockin)/sum(s_harml(j_harm,:).^2);
+            s_harml(j_harm,:)=(cos(2*pi*f0*j_harm*time_lockin+pi*(j_harm+1)/Nharm));
+            lock_in(j_harm,:)=exp(-1i*pi*(j_harm+1)/Nharm)*exp(-1i*2*pi*f0*(j_harm+1)*time_lockin)/sum(s_harml(j_harm,:).^2);
             freq(j_harm)=f0*j_harm;
         end
     case 2 % f=f0*[1,2,5,10]
