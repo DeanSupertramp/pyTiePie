@@ -21,6 +21,10 @@ from scipy.optimize import curve_fit
 R=196*1e3;
 float_elec=0
 
+# def modelCR(x, p0, p1, p2, p3, p4, p5, p6):
+#     return p0+p1*x+p2*x**2+p3*x**3+p4*x**4+p5*x**5+p6*x**6 # poly
+    #return p0 - p1 * p2**x
+    
 def modelCR(x, p1, p2, p3, p4):
     return p1+(p2-p1)/(1+(x/p3)**p4)
 
@@ -69,7 +73,9 @@ if measType == 0:
     sl=np.sin(2*np.pi*f0*time_lockin)
     lock_in=1j*np.exp(-1j*2*np.pi*f0*time_lockin)/sum(sl**2)
     freq=f0
+    print("Measurement Type: MONO")
 elif measType == 1:
+    print("Measurement Type: MULTI")
     lock_in = np.zeros([Nharm,len_time_lockin], dtype = 'complex_')
     freq = np.zeros(Nharm)
     
@@ -87,33 +93,44 @@ elif measType == 1:
 #elif measType == 2:
     plt.figure()
     plt.title("Vin")
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
     plt.plot(Vin)
 
     plt.figure()
     plt.title("VR")
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
     plt.plot(VR)
 
     plt.figure()
     plt.title("VC")
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
     plt.plot(VC)
     
+    # lock-in operation
     Vin_lockin = np.dot(lock_in, Vin)
     VR_lockin = np.dot(lock_in, VR)
 
     plt.figure()
-    plt.title("Real")
-    plt.plot(np.arange(10), Vin_lockin.real, label = 'Vin')
-    plt.plot(np.arange(10), VR_lockin.real, label='VR')
+    plt.title("Lock-in output Real part")
+    plt.plot(freq, Vin_lockin.real, label = 'Vin')
+    plt.plot(freq, VR_lockin.real, label='VR')
+    plt.ylabel('Real part value')
+    plt.xlabel('Frequency [Hz]')
     plt.legend()
 
     plt.figure()
-    plt.title("Imag")
-    plt.plot(np.arange(10), Vin_lockin.imag, label = 'Vin')
-    plt.plot(np.arange(10), VR_lockin.imag, label = 'VR')   
+    plt.title("Lock-in output Imag part")
+    plt.plot(freq, Vin_lockin.imag, label = 'Vin')
+    plt.plot(freq, VR_lockin.imag, label = 'VR')
+    plt.ylabel('Real part value')
+    plt.xlabel('Frequency [Hz]')
     plt.legend()
     
     #b,a = butter(2, [0.25, 1.5*Nharm]*f0/(fS/2), btype='bandpass')
-    b,a = butter(2, 2*Nharm*f0/(fS/2), btype='lowpass')
+    b,a = butter(2, 2*Nharm*f0/(fS/2), btype='lowpass') # ref: https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html
 
     CH1f = signal.filtfilt(b, a, CH1, padtype = None) # ref: https://dsp.stackexchange.com/questions/11466/differences-between-python-and-matlab-filtfilt-function
     CH2f = signal.filtfilt(b, a, CH2, padtype = None)
@@ -122,27 +139,40 @@ elif measType == 1:
     Vin_f=CH2f.transpose()[int(4+Ns_cycle*1+delay) : int(4+Ns_cycle*(Ncycles)+delay)]
     
     plt.figure()
+    plt.title("Signals Filtered")
     plt.plot(VRf, label = 'VRf')
     plt.plot(Vin_f, label = 'Vin_f')
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
     plt.legend()
 
     plt.figure()
+    plt.title("Signals Filtered")
     plt.plot(CH1f.transpose(), label = 'CH1f')
     plt.plot(CH2f.transpose(), label = 'CH2f')
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
     plt.legend()
 
     plt.figure()
+    plt.title("Zoom of Signals Filtered")
     plt.plot(CH1.transpose(), label = 'CH1')
     plt.plot(CH1f.transpose(), label = 'CH1f')
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
     plt.xlim([0,200])
     plt.legend()
     
+    # PHASOR lock-in operation
     phasorVin = np.dot(lock_in, Vin_f)
     phasorVR = np.dot(lock_in, VRf)
     
     plt.figure()
-    plt.plot(phasorVin, label = 'phasorVin')
-    plt.plot(phasorVR, label = 'phasorVR')
+    plt.title("abs value of Phasor signal Filtered")
+    plt.plot(freq, abs(phasorVin), label = 'phasorVin')
+    plt.plot(freq, abs(phasorVR), label = 'phasorVR')
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('Frequency [Hz]')
     plt.legend()
     
     if float_elec == 0:
@@ -152,91 +182,165 @@ elif measType == 1:
         XC = -ZC.imag
         Cestimated = 1/(2*np.pi*freq*np.squeeze(XC))*1e12
         Cestimated_mean = np.mean(Cestimated)
-        print(Cestimated_mean, "pF")
+        print("Cestimated_mean: ",Cestimated_mean, "pF")
         
         plt.figure()
         plt.subplot(2,2,1)
-        plt.plot(phasorVC.real)
+        plt.title("phasorVC.real", fontsize=10, fontweight = 'bold', pad=5)
+        plt.ylabel('Amplitude [V]')
+        plt.xlabel('Frequency [Hz]')
+        plt.plot(freq, phasorVC.real)
         plt.subplot(2,2,2)
-        plt.plot(phasorVC.imag)
+        plt.ylabel('Amplitude [V]')
+        plt.xlabel('Frequency [Hz]')
+        plt.title("phasorVC.imag", fontsize=10, fontweight = 'bold', pad=5)
+        plt.plot(freq, phasorVC.imag)
         plt.subplot(2,2,3)
-        plt.plot(RC)
+        plt.ylabel('Amplitude [V]')
+        plt.xlabel('Frequency [Hz]')
+        plt.title("RC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.plot(freq, RC)
         plt.subplot(2,2,4)
-        plt.plot(XC)
+        plt.ylabel('Amplitude [V]')
+        plt.xlabel('Frequency [Hz]')
+        plt.title("XC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.plot(freq, XC)
+        plt.subplots_adjust(hspace = 0.55, wspace=0.45)
+
         
         plt.figure()
-        plt.plot(Cestimated[0:40])
+        plt.title("C estimated", fontsize=10, fontweight = 'bold', pad=5)
+        plt.ylabel('Capacitance [pF]')
+        plt.xlabel('Frequency [Hz]')
+        plt.plot(freq, Cestimated)
         
         plt.figure()
         plt.subplot(2,1,1)
-        plt.plot(abs(phasorVC))
+        plt.title("Phasor VC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.ylabel('ABS phasor VC')
+        plt.xlabel('Frequency [Hz]')
+        plt.plot(freq, abs(phasorVC))
         plt.subplot(2,1,2)
-        plt.plot(np.angle(phasorVC))
-        
-        plt.figure()
-        plt.subplot(2,1,1)
-        plt.plot(abs(ZC))
-        plt.subplot(2,1,2)
-        plt.plot(np.angle(ZC))
-        
-        popt, pcov = curve_fit(modelCX, freq, np.squeeze(XC), p0 = [2e-11, 0]) 
-        Cestimated2 = popt[0]*1e12
-        print(Cestimated2, "pF")
+        plt.title("Phasor VC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.ylabel('angle phasor VC')
+        plt.xlabel('Frequency [Hz]')
+        plt.plot(freq, np.angle(phasorVC))
+        plt.subplots_adjust(hspace = 0.55, wspace=0.45)
 
         plt.figure()
-        plt.plot(freq, XC)
-        plt.plot(freq, modelCX(freq, *popt))
+        plt.subplot(2,1,1)
+        plt.title("Impedance ZC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.ylabel('abs(ZC)')
+        plt.xlabel('Frequency [Hz]')
+        plt.plot(freq, abs(ZC))
+        plt.subplot(2,1,2)
+        plt.ylabel('abs(ZC)')
+        plt.xlabel('Frequency [Hz]')
+        plt.plot(freq, np.angle(ZC))
         
-        popt, pcov = curve_fit(modelCR, freq, np.squeeze(RC))
+        # FITTING
+        popt, pcov = curve_fit(modelCX, freq, np.squeeze(XC), p0 = [2e-11, 0]) 
+        Cestimated2 = popt[0]*1e12
+        print("C estimated from fitting: ", Cestimated2, "pF")
+
         plt.figure()
-        plt.plot(freq, RC)
-        plt.plot(freq, modelCR(freq, *popt))
+        plt.title("Capacitive reactance XC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.plot(freq, XC, label = 'XC')
+        plt.plot(freq, modelCX(freq, *popt), label = 'XC fitted')
+        plt.ylabel('value (ohm)')
+        plt.xlabel('Frequency [Hz]')
+        plt.legend()
+        
+        popt2, pcov2 = curve_fit(modelCR, freq, np.squeeze(RC))
+        plt.figure()
+        plt.title("Capacitive reactance XC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.ylabel("RC [ohm]")
+        plt.xlabel("frequency [Hz]")
+        plt.plot(freq, RC, label = "RC")
+        plt.plot(freq, modelCR(freq, *popt2), label = "RC fitted")
+        plt.legend()
         
     else:
         phasorVC = phasorVR
         ZC = phasorVC/phasorVin
         RC = ZC.real
         XC = ZC.imag
-        Cestimated = 1/(2*np.pi*freq*np.squeeze(XC))*1e12 
+        Cestimated = 1/(2*np.pi*freq*np.squeeze(XC))*1e12
+        Cestimated_mean = np.mean(Cestimated)
+        print("Cestimated_mean: ", Cestimated_mean, "pF")
 
         
         plt.figure()
         plt.subplot(2,2,1)
-        plt.plot(phasorVC.real)
+        plt.title("phasorVC.real", fontsize=10, fontweight = 'bold', pad=5)
+        plt.ylabel('Amplitude [V]')
+        plt.xlabel('Frequency [Hz]')
+        plt.plot(freq, phasorVC.real)
         plt.subplot(2,2,2)
-        plt.plot(phasorVC.imag)
+        plt.ylabel('Amplitude [V]')
+        plt.xlabel('Frequency [Hz]')
+        plt.title("phasorVC.imag", fontsize=10, fontweight = 'bold', pad=5)
+        plt.plot(freq, phasorVC.imag)
         plt.subplot(2,2,3)
-        plt.plot(RC)
+        plt.ylabel('Amplitude [V]')
+        plt.xlabel('Frequency [Hz]')
+        plt.title("RC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.plot(freq, RC)
         plt.subplot(2,2,4)
-        plt.plot(XC)
+        plt.ylabel('Amplitude [V]')
+        plt.xlabel('Frequency [Hz]')
+        plt.title("XC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.plot(freq, XC)
+        plt.subplots_adjust(hspace = 0.55, wspace=0.45)
         
         plt.figure()
-        plt.plot(Cestimated[0:40])
+        plt.title("C estimated", fontsize=10, fontweight = 'bold', pad=5)
+        plt.ylabel('Capacitance [pF]')
+        plt.xlabel('Frequency [Hz]')
+        plt.plot(freq, Cestimated)
         
         plt.figure()
         plt.subplot(2,1,1)
-        plt.plot(abs(phasorVC))
+        plt.title("Phasor VC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.ylabel('ABS phasor VC')
+        plt.xlabel('Frequency [Hz]')
+        plt.plot(freq, abs(phasorVC))
         plt.subplot(2,1,2)
-        plt.plot(np.angle(phasorVC))
+        plt.title("Phasor VC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.ylabel('angle phasor VC')
+        plt.xlabel('Frequency [Hz]')
+        plt.plot(freq, np.angle(phasorVC))
+        plt.subplots_adjust(hspace = 0.55, wspace=0.45)
         
         plt.figure()
         plt.subplot(2,1,1)
-        plt.plot(abs(ZC))
+        plt.title("Impedance ZC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.ylabel('abs(ZC)')
+        plt.xlabel('Frequency [Hz]')
+        plt.plot(freq, abs(ZC))
         plt.subplot(2,1,2)
-        plt.plot(np.angle(ZC))
+        plt.ylabel('abs(ZC)')
+        plt.xlabel('Frequency [Hz]')
+        plt.plot(freq, np.angle(ZC))
         
         popt, pcov = curve_fit(modelCX_float, freq, np.squeeze(XC)) 
         
         plt.figure()
-        plt.plot(freq, XC)
-        plt.plot(freq, modelCX_float(freq, *popt))
+        plt.title("Capacitive reactance XC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.plot(freq, XC, label = 'XC')
+        plt.plot(freq, modelCX(freq, *popt), label = 'XC fitted')
+        plt.ylabel('value (ohm)')
+        plt.xlabel('Frequency [Hz]')
+        plt.legend()
         
-        popt, pcov = curve_fit(modelCR, freq, np.squeeze(RC))
+        popt2, pcov2 = curve_fit(modelCR, freq, np.squeeze(RC))
         plt.figure()
-        plt.plot(freq, RC)
-        plt.plot(freq, modelCR(freq, *popt))
-
-
+        plt.title("Capacitive reactance XC", fontsize=10, fontweight = 'bold', pad=5)
+        plt.ylabel("RC [ohm]")
+        plt.xlabel("frequency [Hz]")
+        plt.plot(freq, RC, label = "RC")
+        plt.plot(freq, modelCR(freq, *popt2), label = "RC fitted")
+        plt.legend()
 
 else:
     print("measType is not defined")        
