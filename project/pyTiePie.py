@@ -35,9 +35,7 @@ def dummycommand(args):
 
     # controllo se il segnale accetta il parametro ampiezza
     if bool(STM_AMPLITUDE & k2v ): # MASK
-        print("Set Amplitude")
-        
-        
+        print("Set Amplitude")        
         
         
 def gen_settings():

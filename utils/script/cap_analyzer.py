@@ -19,14 +19,14 @@ from scipy import signal
 from scipy.optimize import curve_fit
 
 R=196*1e3;
-float_elec=0
+float_elec=1
 
 # def modelCR(x, p0, p1, p2, p3, p4, p5, p6):
 #     return p0+p1*x+p2*x**2+p3*x**3+p4*x**4+p5*x**5+p6*x**6 # poly
     #return p0 - p1 * p2**x
     
-def modelCR(x, p1, p2, p3, p4):
-    return p1+(p2-p1)/(1+(x/p3)**p4)
+def modelCR(x, p0, p1, p2, p3, p4, p5, p6):
+    return p0+p1*x+p2*x**2+p3*x**3+p4*x**4+p5*x**5+p6*x**6 # poly
 
 def modelCX_float(x, p1, p2):
     return p2+p1/np.sqrt(x)
