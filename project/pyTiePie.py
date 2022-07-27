@@ -1,11 +1,10 @@
 from __future__ import print_function
 import time
-# import os
+import os
 import sys
 import libtiepie
 from libtiepie.const import SIGNAL_TYPES, STM_AMPLITUDE
 from libtiepie.const import ST_UNKNOWN, ST_SINE, ST_TRIANGLE, ST_SQUARE, ST_DC, ST_NOISE, ST_ARBITRARY, ST_PULSE
-
 # from printinfo import *
 import numpy as np
 from matplotlib import pyplot as plt
@@ -15,12 +14,12 @@ import Z_meter
 import argparse
 from MyArgParser import MyArgParser
 
-
 # list out keys and values separately
 # key_list = list(SIGNAL_TYPES.keys())
 # val_list = list(SIGNAL_TYPES.values())
 
 def dummycommand(args):
+    global k2v
     print('Running %s command with args:' % dummycommand.__name__,*args.values(),sep=' ')
     # controllo se il comando è presente tra i segnali della libreria
     # ref: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
@@ -31,32 +30,40 @@ def dummycommand(args):
         print("Command", args["signal"].upper(), "found!")
         k2v = list(SIGNAL_TYPES.keys())[list(SIGNAL_TYPES.values()).index(args["signal"].upper())]         
 
-    gen.signal_type = SIGNAL_TYPES[k2v]    # ref: https://api.tiepie.com/libtiepie/0.4.3/group___s_t__.html
+    # gen.signal_type = SIGNAL_TYPES[k2v]    # ref: https://api.tiepie.com/libtiepie/0.4.3/group___s_t__.html
 
     # controllo se il segnale accetta il parametro ampiezza
     if bool(STM_AMPLITUDE & k2v ): # MASK
         print("Set Amplitude")        
-        
+
+signal_dict = {"UNKNOWN" : libtiepie.ST_UNKNOWN,        # 0
+               "SINE" : libtiepie.ST_SINE,              # 1
+               "TRIANGLE" : libtiepie.ST_TRIANGLE,      # 2
+               "SQUARE" : libtiepie.ST_SQUARE,          # 4
+               "DC" : libtiepie.ST_DC,                  # 8
+               "NOISE" : libtiepie.ST_NOISE,            # 16
+               "ARBITRARY" : libtiepie.ST_ARBITRARY}    # 32
         
 def gen_settings():
     global signalType
     # ********** Generator settings: **********
     # Set signal type:
-    signalType = input("set signal type: \n \
-   - UNKNOWN \n \
-   - SINE \n \
-   - TRIANGLE \n \
-   - SQUARE \n \
-   - DC \n \
-   - NOISE \n \
-   - ARBITRARY \n"
-   )
-    if signalType in signal_dict:
-        gen.signal_type = signal_dict[signalType]    # ref: https://api.tiepie.com/libtiepie/0.4.3/group___s_t__.html
-        
+   #  signalType = input("set signal type: \n \
+   # - UNKNOWN \n \
+   # - SINE \n \
+   # - TRIANGLE \n \
+   # - SQUARE \n \
+   # - DC \n \
+   # - NOISE \n \
+   # - ARBITRARY \n"
+   # )
+    # if signalType in signal_dict:
+    try:
+        # gen.signal_type = signal_dict[signalType]    # ref: https://api.tiepie.com/libtiepie/0.4.3/group___s_t__.html
+        gen.signal_type = k2v
         
         # see const.py for signal definitions and types
-        if signalType == "ARBITRARY":
+        if SIGNAL_TYPES[k2v].upper() == "ARBITRARY":
             # Select frequency mode:
             gen.frequency_mode = libtiepie.FM_SAMPLEFREQUENCY
             # Set sample frequency:
@@ -81,7 +88,7 @@ def gen_settings():
         # print_device_info(gen)
 
         # if signalType == "DC":
-        else:
+        elif SIGNAL_TYPES[k2v].upper() == "SINE":
             # Set frequency:
             gen.frequency = 1e3  # 1 kHz
             # Set amplitude:
@@ -91,22 +98,26 @@ def gen_settings():
             # Enable output:
             gen.output_on = True
             
-        print("signal type selected: ", signalType)
+        print("signal type selected: ", SIGNAL_TYPES[k2v])
         return True
-    else:
-        print("signalType not correct")
+    
+    except Exception as e:
+        print('gen Exception: ', e)
+        # sys.exit(1)
         return False
-
+    # else:
+    #     print("signalType not correct")
+    #     return False
 
 # gen.signal_types restituisce maschera in bit dei segnali
 # from libtiepie.utils import signal_type_str # funzione builtin in libtiepie.utils
 # print('  Signal types              : ' + signal_type_str(gen.signal_types))
 # Commands configuration
 tiepie_setSignal = MyArgParser("set", description = "select signal") # check in libtiepie.const
-tiepie_setSignal.add_argument("signal", type=str, help='Signal Type') 
-tiepie_setSignal.add_argument("freq", type=int, help='Frequency')
-tiepie_setSignal.add_argument("offset", type=float, help='offset') 
-
+tiepie_setSignal.add_argument("signal", type=str, help='Signal Type')
+tiepie_setSignal.add_argument("ampl", nargs='?', type=int, help='Frequency')
+tiepie_setSignal.add_argument("freq", nargs='?', type=int, help='Frequency')
+tiepie_setSignal.add_argument("offset", nargs='?', default = 0, type=int, help='offset') 
 
 tiepie_setDC = MyArgParser("setDC", description = "set DC") # check in libtiepie.const
 tiepie_setDC.add_argument("offsetDC", type=float, help='offset') 
@@ -115,16 +126,6 @@ tiepie_setDC.add_argument("offsetDC", type=float, help='offset')
 commands = {}
 commands['set'] = {'parser': tiepie_setSignal ,'execution': dummycommand}
 commands['setDC'] = {'parser': tiepie_setDC ,'execution': dummycommand}
-
-
-f0=4e3              #freq. fondamentale
-Nharm=50            # n° armoniche
-Tsignal=2           # in [ms]
-fS=1e8              # in [Hz] 100 MHz
-
-# s, lock_in, params,__,__ = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)
-segnale, lock_in, params = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
-
 
 # Parse a line and in case execute a command
 def process(line):
@@ -150,7 +151,7 @@ def process(line):
 
 
 def prompt():
-    return ">>"
+    return "example: set sine 10 1\n>>"
 
 
 def tiepieList():
@@ -164,6 +165,7 @@ def tiepieList():
             print('    Available types: ' + libtiepie.device_type_str(item.types))
             if item.has_server:
                 print('    Server         : ' + item.server.url + ' (' + item.server.name + ')')
+        return item.name
     else:
         print('No devices found!')
         
@@ -214,6 +216,8 @@ def osc_settings():
      scp.record_length = Nsamples  # 10000 samples
      # Set pre sample ratio:
      scp.pre_sample_ratio = 0  # 0 %
+     # Set respolution
+     scp.resolution = 14
      # For all channels:
      for ch in scp.channels:                             # per i 2 canali disponibili
          # Enable channel to measure it:
@@ -234,23 +238,13 @@ def osc_settings():
      trigger_input = scp.trigger_inputs.get_by_id(libtiepie.TIID_GENERATOR_START)  # or TIID_GENERATOR_NEW_PERIOD or TIID_GENERATOR_STOP
      if trigger_input is None:
          raise Exception('Unknown trigger input!')
+         return False
      # Enable trigger input:
      trigger_input.enabled = True
     # Print oscilloscope info:
     # print_device_info(scp)
-
-
-signal_dict = {"UNKNOWN" : libtiepie.ST_UNKNOWN,        # 0
-               "SINE" : libtiepie.ST_SINE,              # 1
-               "TRIANGLE" : libtiepie.ST_TRIANGLE,      # 2
-               "SQUARE" : libtiepie.ST_SQUARE,          # 4
-               "DC" : libtiepie.ST_DC,                  # 8
-               "NOISE" : libtiepie.ST_NOISE,            # 16
-               "ARBITRARY" : libtiepie.ST_ARBITRARY}    # 32
-
-
-
-    
+     return True
+   
 
 def acquire_data():
     #if signalType == "ARBITRARY":
@@ -276,6 +270,7 @@ def acquire_data():
         dataOUT = scp.get_data()
         # y[0,:]=dataOUT[0]
         # y[1,:]=dataOUT[1]
+        
         # PLOT
         plt.plot(np.arange(0,np.size(dataOUT,1),1),np.transpose(dataOUT))
         time.sleep(.1)
@@ -308,30 +303,43 @@ def acquire_data():
 libtiepie.device_list.update()
 tiepieList() # Mostra una lista dei dispositivi collegati e le loro funzioni
 scp, gen = tiepieInit()
+
+
+f0=4e3              #freq. fondamentale
+Nharm=50            # n° armoniche
+Tsignal=2           # in [ms]
+
+# fS=1e8              # in [Hz] 100 MHz
+if "220" in tiepieList().split()[1] : # resolution: 14 bit
+    fS = scp.sample_frequency_max/4
+else:
+    fS = scp.sample_frequency_max/5
+
+# s, lock_in, params,__,__ = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)
+segnale, lock_in, params = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
            
 Nsamples=segnale.size
 
 if __name__ == '__main__':
     
     while process(input(prompt())):
-        pass
+        # pass
     
-    if scp and gen:
-        try:
-            if gen_settings():
-                osc_settings()
-                acquire_data()
-
-        except Exception as e:
-            print('Exception: ', e)
-            sys.exit(1)    
-        # Close oscilloscope:
-        del scp
-        # Close generator:
-        del gen
-    else:
-        print('No oscilloscope available with block measurement support or generator available in the same unit!')
-        sys.exit(1)
-    sys.exit(0) # ref: https://docs.python.org/3/library/sys.html#sys.exit
-                # ZERO: "successful termination”
-                # NONZERO: "abnormal termination"
+        if scp and gen:
+            try:
+                if osc_settings() and gen_settings():
+                    acquire_data()
+    
+            except Exception as e:
+                print('Exception: ', e)
+                sys.exit(1)    
+            # Close oscilloscope:
+            del scp
+            # Close generator:
+            del gen
+        else:
+            print('No oscilloscope available with block measurement support or generator available in the same unit!')
+            sys.exit(1)
+        sys.exit(0) # ref: https://docs.python.org/3/library/sys.html#sys.exit
+                    # ZERO: "successful termination”
+                    # NONZERO: "abnormal termination"
