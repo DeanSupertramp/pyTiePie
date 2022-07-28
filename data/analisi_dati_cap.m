@@ -1,5 +1,8 @@
+clc;
+clear all;
+
 [filename,foldname]=uigetfile('*.mat','select the file(s) to process','MultiSelect','on')
-float_elec=1;
+float_elec=0;
 homefol=pwd;
 cd(foldname);
 load(filename)
@@ -59,22 +62,26 @@ Vcoil=Vin-VR;
 if float_elec==0
 
 %% calculation of the impedances
-
-phasor_coil=lock_in*Vcoil;
 phasorR=lock_in*VR;
 phasorVin=lock_in*Vin;
+phasor_coil=phasorVin - phasorR;
 
-Zcoil=(phasorVin-phasorR)./phasorR*R;
-if flag_ref==1
-    if exist('results')==1
-    else
-    load(reference)
-    end
-    Zcoil=Zcoil-results.Zcoil;
-end
+
+Zcoil = (phasor_coil./phasorR)*R;
+%Zcoil=(phasorVin-phasorR)./phasorR*R;
+% if flag_ref==1
+%     if exist('results')==1
+%     else
+%     load(reference)
+%     end
+%     Zcoil=Zcoil-results.Zcoil;
+% end
 Rcoil=real(Zcoil)';
 Xcoil=-imag(Zcoil)'; 
 Lcoil=1./(2*pi*freq.*Xcoil)*1e12;
+
+C = mean(Lcoil);
+sprintf('C stimata : %f', C)
 
 model_C=[2*pi*freq',(freq')*0];
 param_C=pinv(model_C)*(1./Xcoil)';
@@ -100,12 +107,13 @@ else
     Zcoil=(phasorVin-phasorR)./phasorR*R;
 
     %
-    Rcoil=real(phasorR./phasorVin)'
+    Rcoil=real(phasorR./phasorVin)';
     Xcoil=-imag(phasorR./phasorVin)';     
  %   Rcoil=real(phasorR'); NON NORMALIZZATE
  %   Xcoil=-imag(phasorR'); NON NORMALIZZATE
-    Lcoil=1./(2*pi*freq.*Xcoil);
-
+    Lcoil=1./(2*pi*freq.*Xcoil)*1e12;
+    C = mean(Lcoil);
+sprintf('C stimata : %f', C)
 %%% fit logistic
 startC= [Xcoil(end) Xcoil(1)-Xcoil(end) 1000 1.5];
 coeffC = real(nlinfit(freq,Xcoil, modelC, startC));

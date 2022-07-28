@@ -20,12 +20,15 @@ from MyArgParser import MyArgParser
 
 def dummycommand(args):
     global k2v
+    global f
     print('Running %s command with args:' % dummycommand.__name__,*args.values(),sep=' ')
     # controllo se il comando è presente tra i segnali della libreria
     # ref: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
     if args["signal"].capitalize() in SIGNAL_TYPES.values():
         print("Command", args["signal"].capitalize(), "found!")
         k2v = list(SIGNAL_TYPES.keys())[list(SIGNAL_TYPES.values()).index(args["signal"].capitalize())] # key to value      
+        f = args["freq"]
+        print("frequency setted at : ", str(f), " Hz")
     elif args["signal"].upper() in SIGNAL_TYPES.values(): # Only DC signal
         print("Command", args["signal"].upper(), "found!")
         k2v = list(SIGNAL_TYPES.keys())[list(SIGNAL_TYPES.values()).index(args["signal"].upper())]         
@@ -90,7 +93,7 @@ def gen_settings():
         # if signalType == "DC":
         elif SIGNAL_TYPES[k2v].upper() == "SINE":
             # Set frequency:
-            gen.frequency = 1e3  # 1 kHz
+            gen.frequency = f  # 1 kHz
             # Set amplitude:
             gen.amplitude = 1  # 1 V
             # Set offset:
@@ -115,8 +118,8 @@ def gen_settings():
 # Commands configuration
 tiepie_setSignal = MyArgParser("set", description = "select signal") # check in libtiepie.const
 tiepie_setSignal.add_argument("signal", type=str, help='Signal Type')
-tiepie_setSignal.add_argument("ampl", nargs='?', type=int, help='Frequency')
-tiepie_setSignal.add_argument("freq", nargs='?', type=int, help='Frequency')
+tiepie_setSignal.add_argument("ampl", nargs='?', default = 1.0, type=float, help='Frequency')
+tiepie_setSignal.add_argument("freq", nargs='?', type=float, help='Frequency')
 tiepie_setSignal.add_argument("offset", nargs='?', default = 0, type=int, help='offset') 
 
 tiepie_setDC = MyArgParser("setDC", description = "set DC") # check in libtiepie.const
@@ -151,7 +154,7 @@ def process(line):
 
 
 def prompt():
-    return "example: set sine 10 1\n>>"
+    return "example: set <SIGNAL> <AMPLITUDE> <FREQUENCY> <OFFSET>\n>>"
 
 
 def tiepieList():
@@ -319,6 +322,9 @@ else:
 segnale, lock_in, params = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
            
 Nsamples=segnale.size
+
+# Nsamples=int(Tsignal*100/1000)     # n° campioni [ms * MHz / 1000 = 1e-3 * 1e6 / 1e3]                      200 000
+
 
 if __name__ == '__main__':
     
