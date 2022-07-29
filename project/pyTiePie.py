@@ -3,13 +3,11 @@ import time
 import os
 import sys
 import libtiepie
-from libtiepie.const import SIGNAL_TYPES, STM_AMPLITUDE
+from libtiepie.const import SIGNAL_TYPES, STM_AMPLITUDE, STM_OFFSET
 from libtiepie.const import ST_UNKNOWN, ST_SINE, ST_TRIANGLE, ST_SQUARE, ST_DC, ST_NOISE, ST_ARBITRARY, ST_PULSE
-# from printinfo import *
 import numpy as np
 from matplotlib import pyplot as plt
 from array import array
-# from math import sin
 import Z_meter
 import argparse
 from MyArgParser import MyArgParser
@@ -18,27 +16,91 @@ from MyArgParser import MyArgParser
 # key_list = list(SIGNAL_TYPES.keys())
 # val_list = list(SIGNAL_TYPES.values())
 
-def dummycommand(args):
+def command(args):
     global k2v
     global f
-    print('Running %s command with args:' % dummycommand.__name__,*args.values(),sep=' ')
+    global Nsamples
+    global a
+    global o
+
+    print('Running %s with args:' % command.__name__,*args.values(),sep=' ')
     # controllo se il comando è presente tra i segnali della libreria
     # ref: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
-    if args["signal"].capitalize() in SIGNAL_TYPES.values():
-        print("Command", args["signal"].capitalize(), "found!")
-        k2v = list(SIGNAL_TYPES.keys())[list(SIGNAL_TYPES.values()).index(args["signal"].capitalize())] # key to value      
-        f = args["freq"]
-        print("frequency setted at : ", str(f), " Hz")
-    elif args["signal"].upper() in SIGNAL_TYPES.values(): # Only DC signal
-        print("Command", args["signal"].upper(), "found!")
-        k2v = list(SIGNAL_TYPES.keys())[list(SIGNAL_TYPES.values()).index(args["signal"].upper())]         
-
+    try:
+        if args["signal"].capitalize() in SIGNAL_TYPES.values():
+            print("Command", args["signal"].capitalize(), "found!")
+            k2v = list(SIGNAL_TYPES.keys())[list(SIGNAL_TYPES.values()).index(args["signal"].capitalize())] # key to value      
+            f = args["freq"]
+            print("frequency setted at :\t", str(f), " Hz")
+            # o = args["offset"]
+            
+            # controllo se il segnale accetta il parametro offset
+            if bool(STM_OFFSET & k2v ): # MASK
+                print("Set Offset:\t", args["offset"])
+                if args["offset"] > gen.offset_min:
+                    if args["offset"] < gen.offset_max:
+                        o = args["offset"]
+                    else:
+                        print("offset out of MAX range")
+                        sys.exit(1)
+                else:
+                    print("offset out of MIN range")
+                    sys.exit(1)
+            
+            if SIGNAL_TYPES[k2v].upper() == "ARBITRARY":
+                Nsamples=segnale.size
+            else:
+                Nsamples=int(fS/f)
+                
+    except:
+        if args["signalDC"].upper() in SIGNAL_TYPES.values(): # Only DC signal
+            print("Command", args["signalDC"].upper(), "found!")
+            k2v = list(SIGNAL_TYPES.keys())[list(SIGNAL_TYPES.values()).index(args["signalDC"].upper())]
+            # o = args["offsetDC"]
+            
+            # controllo se il segnale accetta il parametro offset
+            if bool(STM_OFFSET & k2v ): # MASK
+                print("Set OffsetDC:\t", args["offsetDC"])
+                if args["offsetDC"] > gen.offset_min:
+                    if args["offsetDC"] < gen.offset_max:
+                        o = args["offsetDC"]
+                    else:
+                        print("offsetDC out of MAX range")
+                        sys.exit(1)
+                else:
+                    print("offsetDC out of MIN range")
+                    sys.exit(1)
+                    
+            Nsamples = int(fS*1e-3) # 1 sec 
     # gen.signal_type = SIGNAL_TYPES[k2v]    # ref: https://api.tiepie.com/libtiepie/0.4.3/group___s_t__.html
-
     # controllo se il segnale accetta il parametro ampiezza
     if bool(STM_AMPLITUDE & k2v ): # MASK
-        print("Set Amplitude")        
+        print("Set Amplitude: ", args["ampl"])
+        if args["ampl"] > gen.amplitude_min:
+            if args["ampl"] < gen.amplitude_max:
+                a = args["ampl"]
+            else:
+                print("amplitude out of MAX range")
+                sys.exit(1)
+        else:
+            print("amplitude out of MIN range")
+            sys.exit(1)
 
+
+            
+    # # controllo se il segnale accetta il parametro offset
+    # if bool(STM_OFFSET & k2v ): # MASK
+    #     print("Set Offset: ", args["offset"])
+    #     if args["offset"] > gen.offset_min:
+    #         if args["offset"] < gen.offset_max:
+    #             o = args["offset"]
+    #         else:
+    #             print("offset out of MAX range")
+    #             sys.exit(1)
+    #     else:
+    #         print("offset out of MIN range")
+    #         sys.exit(1)
+           
 signal_dict = {"UNKNOWN" : libtiepie.ST_UNKNOWN,        # 0
                "SINE" : libtiepie.ST_SINE,              # 1
                "TRIANGLE" : libtiepie.ST_TRIANGLE,      # 2
@@ -50,21 +112,9 @@ signal_dict = {"UNKNOWN" : libtiepie.ST_UNKNOWN,        # 0
 def gen_settings():
     global signalType
     # ********** Generator settings: **********
-    # Set signal type:
-   #  signalType = input("set signal type: \n \
-   # - UNKNOWN \n \
-   # - SINE \n \
-   # - TRIANGLE \n \
-   # - SQUARE \n \
-   # - DC \n \
-   # - NOISE \n \
-   # - ARBITRARY \n"
-   # )
-    # if signalType in signal_dict:
     try:
         # gen.signal_type = signal_dict[signalType]    # ref: https://api.tiepie.com/libtiepie/0.4.3/group___s_t__.html
         gen.signal_type = k2v
-        
         # see const.py for signal definitions and types
         if SIGNAL_TYPES[k2v].upper() == "ARBITRARY":
             # Select frequency mode:
@@ -83,7 +133,6 @@ def gen_settings():
             # Create signal array, and load it into the generator:
             dataIN= array('f')
             dataOUT= array('f')
-            
             for jx in range(segnale.size):
                 dataIN.append(segnale[0,jx])
             gen.set_data(dataIN)
@@ -91,19 +140,22 @@ def gen_settings():
         # print_device_info(gen)
 
         # if signalType == "DC":
-        elif SIGNAL_TYPES[k2v].upper() == "SINE":
+        elif SIGNAL_TYPES[k2v].upper() in "SINE TRIANGLE SQUARE":
             # Set frequency:
             gen.frequency = f  # 1 kHz
             # Set amplitude:
-            gen.amplitude = 1  # 1 V
+            gen.amplitude = a  # 1 V
             # Set offset:
-            gen.offset = 0  # 0 V
+            gen.offset = o  # 0 V
             # Enable output:
             gen.output_on = True
-            
+        elif SIGNAL_TYPES[k2v].upper() == "DC":
+            # Set offset:
+            gen.offset = o  # 0 V
+            # Enable output:
+            gen.output_on = True
         print("signal type selected: ", SIGNAL_TYPES[k2v])
         return True
-    
     except Exception as e:
         print('gen Exception: ', e)
         # sys.exit(1)
@@ -118,17 +170,18 @@ def gen_settings():
 # Commands configuration
 tiepie_setSignal = MyArgParser("set", description = "select signal") # check in libtiepie.const
 tiepie_setSignal.add_argument("signal", type=str, help='Signal Type')
-tiepie_setSignal.add_argument("ampl", nargs='?', default = 1.0, type=float, help='Frequency')
-tiepie_setSignal.add_argument("freq", nargs='?', type=float, help='Frequency')
-tiepie_setSignal.add_argument("offset", nargs='?', default = 0, type=int, help='offset') 
+tiepie_setSignal.add_argument("ampl", nargs='?', default = 1.0, type=float, help='Amplitude')
+tiepie_setSignal.add_argument("freq", nargs='?', default = 100, type=float, help='Frequency')
+tiepie_setSignal.add_argument("offset", nargs='?', default = 0, type=float, help='Offset') 
 
 tiepie_setDC = MyArgParser("setDC", description = "set DC") # check in libtiepie.const
 tiepie_setDC.add_argument("offsetDC", type=float, help='offset') 
+tiepie_setDC.add_argument("signalDC", nargs='?', default = "DC", type=str, help='DC label')
 
 # Add all commands to an instruction set dictionary
 commands = {}
-commands['set'] = {'parser': tiepie_setSignal ,'execution': dummycommand}
-commands['setDC'] = {'parser': tiepie_setDC ,'execution': dummycommand}
+commands['set'] = {'parser': tiepie_setSignal ,'execution': command}
+commands['setDC'] = {'parser': tiepie_setDC ,'execution': command}
 
 # Parse a line and in case execute a command
 def process(line):
@@ -154,7 +207,11 @@ def process(line):
 
 
 def prompt():
-    return "example: set <SIGNAL> <AMPLITUDE> <FREQUENCY> <OFFSET>\n>>"
+    print("\nCommand CLI options:")
+    print("set <SIGNAL> <AMPLITUDE> <FREQUENCY> <OFFSET>")
+    print("setDC <OFFSET>")
+    print("exit")
+    return ">>"
 
 
 def tiepieList():
@@ -227,7 +284,7 @@ def osc_settings():
          ch.enabled = True
          # Set range:
          # ch.ranges                                     # mostra i possibili range = [0.2, 0.4, 0.8, 2.0, 4.0, 8.0, 20.0, 40.0, 80.0]
-         ch.range = 0.2                                  # min 200mV, max 80V
+         ch.range = 2                                  # min 200mV, max 80V
          ch.auto_ranging = True                          # range riferim: https://api.tiepie.com/libtiepie/0.9.15/group__scp__ch__range.html
          # Set coupling:
          # ch.couplings                                  # 3 Opzioni CK_DCV (1), CK_ACV (2) . NON supporta invece CK_ACA (8), CK_DCA (4), CK_OHM (16) e CK_UNKNOWN (0)
@@ -307,7 +364,6 @@ libtiepie.device_list.update()
 tiepieList() # Mostra una lista dei dispositivi collegati e le loro funzioni
 scp, gen = tiepieInit()
 
-
 f0=4e3              #freq. fondamentale
 Nharm=50            # n° armoniche
 Tsignal=2           # in [ms]
@@ -321,13 +377,8 @@ else:
 # s, lock_in, params,__,__ = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)
 segnale, lock_in, params = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
            
-Nsamples=segnale.size
-
-# Nsamples=int(Tsignal*100/1000)     # n° campioni [ms * MHz / 1000 = 1e-3 * 1e6 / 1e3]                      200 000
-
-
 if __name__ == '__main__':
-    
+
     while process(input(prompt())):
         # pass
     
