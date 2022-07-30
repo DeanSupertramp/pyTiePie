@@ -36,7 +36,7 @@
 <h3 align="center">pyTiePie</h3>
 
   <p align="center">
-    Project for Master's Degree Thesis in Electronics Engineering
+Simulation, design and implementation of a non-destructive diagnostic system based on capacitive sensors.
     <br />
     <a href="https://github.com/DeanSupertramp/pyTiePie"><strong>Explore the docs »</strong></a>
     <br />
@@ -85,41 +85,25 @@
 
 <!-- Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `DeanSupertramp`, `pyTiePie`, `DeanSupertramp`, `andrea-alecce`, `gmail`, `andrealecce3`, `project_title`, `project_description` -->
 
-Project for Master's Degree Thesis in Electronics Engineering.
-Università della Calabria
+**Simulation, design and implementation of a non-destructive diagnostic system based on capacitive sensors.**
 
-
+My master's thesis revolves around non-destructive technologies for diagnostics, using capacitive sensors. The simulations, signal acquisitions, data processing were done using Python and Matlab scripts and using a TiePie HS5, an all-in-one Arbitrary Waveform Generator and Acquisition system. The thesis foresees the realization of a portable system to carry out these tests
 <p align="right">(<a href="#top">back to top</a>)</p>
 
-
-
 ### Built With
-
-<!-- * [Next.js](https://nextjs.org/)
-* [React.js](https://reactjs.org/)
-* [Vue.js](https://vuejs.org/)
-* [Angular](https://angular.io/)
-* [Svelte](https://svelte.dev/)
-* [Laravel](https://laravel.com)
-* [Bootstrap](https://getbootstrap.com)
-* [JQuery](https://jquery.com) -->
-
-
 * [Python3](https://www.python.org/)
 * [TiePie](https://www.tiepie.com/en)
 * [LTSpice](https://www.analog.com/en/design-center/design-tools-and-calculators/ltspice-simulator.html)
+* [MATLAB](https://mathworks.com/products/matlab.html)
+* Developed in [Spyder](https://www.spyder-ide.org/) and [VSCode](https://code.visualstudio.com/)
 * and other future tools...
-
 <p align="right">(<a href="#top">back to top</a>)</p>
-
-
 
 <!-- GETTING STARTED -->
 ## Getting Started
 To get a local copy up and running follow these simple example steps.
 
 ### Prerequisites
-
 This is a list of things you need for use the software and how to install them.
 1. Python3
 2. Driver and software of TiePie (mod. HS5) at: [https://www.tiepie.com/en/usb-oscilloscope/handyscope-hs5#downloads](https://www.tiepie.com/en/usb-oscilloscope/handyscope-hs5#downloads)
@@ -156,20 +140,18 @@ This is a list of things you need for use the software and how to install them.
     ```
 
 ### Installation
-
 1. Clone the repo
    ```sh
    git clone https://github.com/DeanSupertramp/pyTiePie.git
    ```
-
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 ### Map of the repository
 * [project](https://github.com/DeanSupertramp/pyTiePie/tree/main/project): contains scripts written to work with TiePie.
 * [libtiepie](https://github.com/DeanSupertramp/pyTiePie/tree/main/libtiepie): TiePie's Python module.
-* [example](https://github.com/DeanSupertramp/pyTiePie/tree/main/examples): contains example for TiePie.
-* [images](https://github.com/DeanSupertramp/pyTiePie/tree/main/images): contains images useful for the repository.
-* [utils](https://github.com/DeanSupertramp/pyTiePie/tree/main/utils): contains scripts, tools and simulations:
+* [example](https://github.com/DeanSupertramp/pyTiePie/tree/main/examples): contains example for TiePie written in Python.
+* [images](https://github.com/DeanSupertramp/pyTiePie/tree/main/images): contains images useful for the repository or output graphs of Python's script.
+* [utils](https://github.com/DeanSupertramp/pyTiePie/tree/main/utils): contains scripts, Python's module, tools and simulations:
   * [Excel](https://github.com/DeanSupertramp/pyTiePie/tree/main/utils/Excell) files
   * [Spice](https://github.com/DeanSupertramp/pyTiePie/tree/main/utils/Spice_Circuit): LTSpice simulation files
   * [script](https://github.com/DeanSupertramp/pyTiePie/tree/main/utils/script): Python script for simulation and analysis.  
@@ -187,16 +169,31 @@ _For more examples, please refer to the [Documentation](https://example.com)_
 
 <!-- ROADMAP -->
 ## Roadmap
-
-- [ ] Circuit sensitivity analysis respect to a capacity variation, simulating the use of an ADC for acquisition
+- [x] Circuit sensitivity analysis respect to a capacity variation, simulating the use of an ADC for acquisition
   - [x] Impedance measurement with R series
   - [x] Calculate the voltage difference measured for a given variation in capacitance
   - [x] Simulate the quantization of the ADC
-  - [ ] Apply lock-in
-  - [ ] Derive the phasors at the various frequencies and therefore dC at the various frequencies by comparing the estimated dC with the theoretical simulated one
+  - [x] Apply lock-in
+  - [x] Derive the phasors at the various frequencies and therefore dC at the various frequencies by comparing the estimated dC with the theoretical simulated one
 - [ ] Impedance measurement with Wheatstone bridge
   - [ ] Simulate both the reference capacitor on a healthy point and in the air
   - [ ] Repeat the analysis for the estimate of dC
+- [x] Data elaboration and manipulation 
+  - [x] Signal filtering (Butterworth)
+  - [x] Lock-in
+  - [x] Model fitting
+  - [x] Extrapolation of the capacity value
+  - [x] Plotting
+- [ ] Methods of data acquisition
+  - [ ] Live
+  - [x] Offline (from data pre-saved)
+- [x] Generation of a map of capacity value from a generic UUT (Unit Under Test)
+- [x] CLI implementation
+  - [x] Parsing input
+  - [x] TiePie basic control (using libtiepie module and variables)
+- [ ] Implement data processing and capacity analysis in the cli
+
+
 
 See the [open issues](https://github.com/DeanSupertramp/pyTiePie/issues) for a full list of proposed features (and known issues).
 
@@ -234,7 +231,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@DeanSupertramp](https://twitter.com/DeanSupertramp) - andrealecce3@gmail.com
+Andrea Alecce - [@DeanSupertramp](https://twitter.com/DeanSupertramp) - andrealecce3@gmail.com
 
 Project Link: [https://github.com/DeanSupertramp/pyTiePie](https://github.com/DeanSupertramp/pyTiePie)
 
@@ -245,7 +242,7 @@ Project Link: [https://github.com/DeanSupertramp/pyTiePie](https://github.com/De
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-* []()
+* [Prof. Marco Ricci]()
 * []()
 * []()
 

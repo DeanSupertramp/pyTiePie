@@ -12,17 +12,12 @@ import Z_meter
 import argparse
 from MyArgParser import MyArgParser
 
-# list out keys and values separately
-# key_list = list(SIGNAL_TYPES.keys())
-# val_list = list(SIGNAL_TYPES.values())
-
 def command(args):
     global k2v
     global f
     global Nsamples
     global a
     global o
-
     print('Running %s with args:' % command.__name__,*args.values(),sep=' ')
     # controllo se il comando è presente tra i segnali della libreria
     # ref: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
@@ -32,8 +27,6 @@ def command(args):
             k2v = list(SIGNAL_TYPES.keys())[list(SIGNAL_TYPES.values()).index(args["signal"].capitalize())] # key to value      
             f = args["freq"]
             print("frequency setted at :\t", str(f), " Hz")
-            # o = args["offset"]
-            
             # controllo se il segnale accetta il parametro offset
             if bool(STM_OFFSET & k2v ): # MASK
                 print("Set Offset:\t", args["offset"])
@@ -51,7 +44,6 @@ def command(args):
                 Nsamples=segnale.size
             else:
                 Nsamples=int(fS/f)
-                
     except:
         if args["signalDC"].upper() in SIGNAL_TYPES.values(): # Only DC signal
             print("Command", args["signalDC"].upper(), "found!")
@@ -70,7 +62,6 @@ def command(args):
                 else:
                     print("offsetDC out of MIN range")
                     sys.exit(1)
-                    
             Nsamples = int(fS*1e-3) # 1 sec 
     # gen.signal_type = SIGNAL_TYPES[k2v]    # ref: https://api.tiepie.com/libtiepie/0.4.3/group___s_t__.html
     # controllo se il segnale accetta il parametro ampiezza
@@ -86,8 +77,6 @@ def command(args):
             print("amplitude out of MIN range")
             sys.exit(1)
 
-
-            
     # # controllo se il segnale accetta il parametro offset
     # if bool(STM_OFFSET & k2v ): # MASK
     #     print("Set Offset: ", args["offset"])
