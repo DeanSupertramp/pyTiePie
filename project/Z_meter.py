@@ -1,5 +1,5 @@
-def Z_meter_excitation(f0,Nharm,Tsignal,fS,amp):
-    from math import sin
+def Z_meter_excitation(f0,Nharm,Tsignal,fS):
+    # from math import sin
     # f0=4e3                        # freq. fondamentale    4 KHz
     # Nharm=50                      # n° armoniche          50
     # Tsignal=2                     # in [ms]               2ms 

@@ -18,6 +18,10 @@ from scipy import signal
 from scipy.optimize import curve_fit
 import sys
 import os
+import pandas as pd
+import json
+
+
 
 def clear_all():
     """Clears all the variables from the workspace of the spyder application."""
@@ -194,22 +198,35 @@ else:
     sys.exit(1)
 
 
+def readCSV(filepath):
+    df = pd.read_csv(filepath)
+    return df
+
+def readJSON(filepath):
+    return json.load(filepath)
+
 if __name__ == '__main__':   
     for file in range(countFilef()):   
         if file_path:
-            mat = scipy.io.loadmat(os.path.dirname(file_path) + "/" + matrixList[file])
+            if file_path.split('.')[1] == "mat":
+                mat = scipy.io.loadmat(os.path.dirname(file_path) + "/" + matrixList[file])
+                
+                f0 = mat['param']['f0'][0][0][0][0]
+                fS = mat['param']['fS'][0][0][0][0]
+                Ns = mat['param']['Ns'][0][0][0][0]
+                Nharm = mat['param']['Nharm'][0][0][0][0]
+                # measType = mat['param']['measType'][0][0][0][0]
+                VR=mat['signals']['VR'][0][0]
+                Vin=mat['signals']['Vin'][0][0]
+                CH1 = mat['signals']['CH1'][0][0]
+                CH2 = mat['signals']['CH2'][0][0]
+                Zcoil = mat['results']['Zcoil'][0][0]
+                Ccoil = mat['results']['Lcoil'][0][0][0]
+                
+            elif file_path.split('.')[1] == "csv":
+                df = readCSV(file_path)
     
-            f0 = mat['param']['f0'][0][0][0][0]
-            fS = mat['param']['fS'][0][0][0][0]
-            Ns = mat['param']['Ns'][0][0][0][0]
-            Nharm = mat['param']['Nharm'][0][0][0][0]
-            # measType = mat['param']['measType'][0][0][0][0]
-            VR=mat['signals']['VR'][0][0]
-            Vin=mat['signals']['Vin'][0][0]
-            CH1 = mat['signals']['CH1'][0][0]
-            CH2 = mat['signals']['CH2'][0][0]
-            Zcoil = mat['results']['Zcoil'][0][0]
-            Ccoil = mat['results']['Lcoil'][0][0][0]
+
             
             Ns_cycle=fS/f0
             Ncycles=Ns/Ns_cycle

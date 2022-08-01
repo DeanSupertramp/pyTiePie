@@ -11,6 +11,7 @@ from array import array
 import Z_meter
 import argparse
 from MyArgParser import MyArgParser
+import json
 
 def command(args):
     global k2v
@@ -111,9 +112,9 @@ def gen_settings():
             # Set sample frequency:
             gen.frequency = fS  # 100 MHz
             # Set amplitude:
-            gen.amplitude = 1 # 1Vpp
+            gen.amplitude = a # 1Vpp
             # Set offset:
-            gen.offset = 0  # 0 V
+            gen.offset = o  # 0 V
             # Enable output:
             gen.output_on = True
             gen.mode = libtiepie.GM_BURST_COUNT
@@ -129,7 +130,7 @@ def gen_settings():
         # print_device_info(gen)
 
         # if signalType == "DC":
-        elif SIGNAL_TYPES[k2v].upper() in "SINE TRIANGLE SQUARE":
+        elif SIGNAL_TYPES[k2v].upper() in "SINE TRIANGLE SQUARE NOISE":
             # Set frequency:
             gen.frequency = f  # 1 kHz
             # Set amplitude:
@@ -138,6 +139,8 @@ def gen_settings():
             gen.offset = o  # 0 V
             # Enable output:
             gen.output_on = True
+            gen.mode = libtiepie.GM_CONTINUOUS
+
         elif SIGNAL_TYPES[k2v].upper() == "DC":
             # Set offset:
             gen.offset = o  # 0 V
@@ -194,14 +197,12 @@ def process(line):
         print('%s: command not found' % the_command)
     return True
 
-
 def prompt():
     print("\nCommand CLI options:")
     print("set <SIGNAL> <AMPLITUDE> <FREQUENCY> <OFFSET>")
     print("setDC <OFFSET>")
     print("exit")
     return ">>"
-
 
 def tiepieList():
     if len(libtiepie.device_list) > 0:
@@ -254,7 +255,6 @@ def reset_tiepie():
     # from usb.util import dispose_resource
     # dispose_resources(dev)
     
-
 def osc_settings(): 
      # ********** Oscilloscope settings: **********      # Proprietà scp: https://github.com/TiePie/python-libtiepie/blob/d2a9875855298a58d6a16be5b61aaa89a558e7d8/libtiepie/oscilloscope.py#L505
      # Set measure mode:
@@ -293,7 +293,6 @@ def osc_settings():
     # Print oscilloscope info:
     # print_device_info(scp)
      return True
-   
 
 def acquire_data():
     #if signalType == "ARBITRARY":
@@ -320,6 +319,8 @@ def acquire_data():
         # y[0,:]=dataOUT[0]
         # y[1,:]=dataOUT[1]
         
+        saveCSV(dataOUT)
+        
         # PLOT
         plt.plot(np.arange(0,np.size(dataOUT,1),1),np.transpose(dataOUT))
         time.sleep(.1)
@@ -330,23 +331,31 @@ def acquire_data():
             plt.cla() # Clear current axes
     gen.output_on = False
 
-# def saveCSV():
-#     # Output CSV data:
-#     csv_file = open('OscilloscopeGeneratorTrigger.csv', 'w')
-#     try:
-#         csv_file.write('Sample')
-#         for i in range(len(dataOUT)):
-#             csv_file.write(';Ch' + str(i + 1))
-#         csv_file.write(os.linesep)
-#         for i in range(len(dataOUT[0])):
-#             csv_file.write(str(i))
-#             for j in range(len(data)):
-#                 csv_file.write(';' + str(dataOUT[j][i]))
-#             csv_file.write(os.linesep)
-#         print()
-#         print('Data written to: ' + csv_file.name)
-#     finally:
-#         csv_file.close()
+def saveCSV(dataOUT):
+    # Output CSV data:
+    csv_file = open('1.csv', 'w')
+    try:
+        csv_file.write('Sample')
+        for i in range(len(dataOUT)):
+            csv_file.write(',Ch' + str(i + 1))
+        csv_file.write(os.linesep)
+        for i in range(len(dataOUT[0])):
+            csv_file.write(str(i))
+            for j in range(len(dataOUT)):
+                csv_file.write(',' + str(dataOUT[j][i]))
+            csv_file.write(os.linesep)
+        print()
+        print('Data written to: ' + csv_file.name)
+    finally:
+        csv_file.close()
+        
+def saveJSON():
+    data = {"f0" : f0,
+         "Nharm" : Nharm,
+         "Tsignal" : Tsignal,
+         "fS" : fS}
+    with open('config.json', 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
 
 # Search for devices:
 libtiepie.device_list.update()
@@ -364,18 +373,18 @@ else:
     fS = scp.sample_frequency_max/5
 
 # s, lock_in, params,__,__ = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)
-segnale, lock_in, params = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
-           
-if __name__ == '__main__':
+segnale, lock_in, params = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
 
+saveJSON()
+
+def main():
+    global scp, gen
     while process(input(prompt())):
-        # pass
-    
+    # pass
         if scp and gen:
             try:
                 if osc_settings() and gen_settings():
                     acquire_data()
-    
             except Exception as e:
                 print('Exception: ', e)
                 sys.exit(1)    
@@ -389,3 +398,6 @@ if __name__ == '__main__':
         sys.exit(0) # ref: https://docs.python.org/3/library/sys.html#sys.exit
                     # ZERO: "successful termination”
                     # NONZERO: "abnormal termination"
+
+if __name__ == '__main__':
+    main()
