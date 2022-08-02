@@ -13,12 +13,16 @@ import argparse
 from MyArgParser import MyArgParser
 import json
 
+import git # gitpython
+
+
 def command(args):
     global k2v
     global f
     global Nsamples
     global a
     global o
+    global c # config measurement
     print('Running %s with args:' % command.__name__,*args.values(),sep=' ')
     # controllo se il comando è presente tra i segnali della libreria
     # ref: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
@@ -28,6 +32,12 @@ def command(args):
             k2v = list(SIGNAL_TYPES.keys())[list(SIGNAL_TYPES.values()).index(args["signal"].capitalize())] # key to value      
             f = args["freq"]
             print("frequency setted at :\t", str(f), " Hz")
+            c = args["config"]
+            # if c.upper() in "SERIES FLOAT":
+            #     print("configuration measurement setted at: ", c)
+            # else:
+            #     print("configuration measurement not found!")
+            #     sys.exit(1)
             # controllo se il segnale accetta il parametro offset
             if bool(STM_OFFSET & k2v ): # MASK
                 print("Set Offset:\t", args["offset"])
@@ -50,7 +60,7 @@ def command(args):
             print("Command", args["signalDC"].upper(), "found!")
             k2v = list(SIGNAL_TYPES.keys())[list(SIGNAL_TYPES.values()).index(args["signalDC"].upper())]
             # o = args["offsetDC"]
-            
+            c = args["configDC"]
             # controllo se il segnale accetta il parametro offset
             if bool(STM_OFFSET & k2v ): # MASK
                 print("Set OffsetDC:\t", args["offsetDC"])
@@ -77,6 +87,12 @@ def command(args):
         else:
             print("amplitude out of MIN range")
             sys.exit(1)
+    # config check        
+    if c.upper() in "SERIES FLOAT":
+        print("configuration measurement setted at: ", c)
+    else:
+        print("configuration measurement not found!")
+        sys.exit(1)
 
     # # controllo se il segnale accetta il parametro offset
     # if bool(STM_OFFSET & k2v ): # MASK
@@ -107,6 +123,8 @@ def gen_settings():
         gen.signal_type = k2v
         # see const.py for signal definitions and types
         if SIGNAL_TYPES[k2v].upper() == "ARBITRARY":
+            segnale, lock_in, params = Z_meter.Z_meter_excitation(a,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
+
             # Select frequency mode:
             gen.frequency_mode = libtiepie.FM_SAMPLEFREQUENCY
             # Set sample frequency:
@@ -164,11 +182,14 @@ tiepie_setSignal = MyArgParser("set", description = "select signal") # check in 
 tiepie_setSignal.add_argument("signal", type=str, help='Signal Type')
 tiepie_setSignal.add_argument("ampl", nargs='?', default = 1.0, type=float, help='Amplitude')
 tiepie_setSignal.add_argument("freq", nargs='?', default = 100, type=float, help='Frequency')
-tiepie_setSignal.add_argument("offset", nargs='?', default = 0, type=float, help='Offset') 
+tiepie_setSignal.add_argument("offset", nargs='?', default = 0, type=float, help='Offset')
+tiepie_setSignal.add_argument("config", nargs='?', default = "Series", type=str, help='Config Measurement') 
+ 
 
 tiepie_setDC = MyArgParser("setDC", description = "set DC") # check in libtiepie.const
 tiepie_setDC.add_argument("offsetDC", type=float, help='offset') 
 tiepie_setDC.add_argument("signalDC", nargs='?', default = "DC", type=str, help='DC label')
+tiepie_setDC.add_argument("configDC", nargs='?', default = "Series", type=str, help='ConfigDC Measurement') 
 
 # Add all commands to an instruction set dictionary
 commands = {}
@@ -199,7 +220,7 @@ def process(line):
 
 def prompt():
     print("\nCommand CLI options:")
-    print("set <SIGNAL> <AMPLITUDE> <FREQUENCY> <OFFSET>")
+    print("set <SIGNAL> <AMPLITUDE> <FREQUENCY> <OFFSET> <CONFIG>")
     print("setDC <OFFSET>")
     print("exit")
     return ">>"
@@ -294,8 +315,9 @@ def osc_settings():
     # print_device_info(scp)
      return True
 
-def acquire_data():
+def acquire_data(path):
     #if signalType == "ARBITRARY":
+    dataSUM = []
     for j in range(10):
         # Start measurement:
         scp.start()
@@ -318,8 +340,8 @@ def acquire_data():
         dataOUT = scp.get_data()
         # y[0,:]=dataOUT[0]
         # y[1,:]=dataOUT[1]
-        
-        saveCSV(dataOUT)
+        # dataSUM = np.add(dataSUM, dataOUT)
+        # saveCSV(j, dataOUT, path)
         
         # PLOT
         plt.plot(np.arange(0,np.size(dataOUT,1),1),np.transpose(dataOUT))
@@ -329,11 +351,28 @@ def acquire_data():
         print(j)
         if j <9:
             plt.cla() # Clear current axes
+    # dataMEAN = list(dataSUM)/10
+    # saveCSV(j, dataMEAN, path)
+
     gen.output_on = False
 
-def saveCSV(dataOUT):
+def createDir():
+    # cur_path = os.path.dirname(os.getcwd())
+    # new_path = os.path.relpath('..//data/prova', cur_path)
+    repo = git.Repo('.', search_parent_directories=True)
+    timestr = time.strftime("%Y_%m_%d")
+    timestr2 = time.strftime("%H_%M")
+    new_path = repo.working_tree_dir + "/data/" + timestr + "/" + c.upper() + "_" + timestr2
+    if  os.path.exists(new_path):
+        new_path = new_path + "_1"
+    os.makedirs(new_path, exist_ok=True)
+    return new_path
+
+def saveCSV(j, dataOUT, path):
+
     # Output CSV data:
-    csv_file = open('1.csv', 'w')
+    filepath = path + "/" + str(j) + ".csv"
+    csv_file = open(filepath, 'w')
     try:
         csv_file.write('Sample')
         for i in range(len(dataOUT)):
@@ -349,12 +388,13 @@ def saveCSV(dataOUT):
     finally:
         csv_file.close()
         
-def saveJSON():
+def saveJSON(path):
     data = {"f0" : f0,
          "Nharm" : Nharm,
          "Tsignal" : Tsignal,
          "fS" : fS}
-    with open('config.json', 'w', encoding='utf-8') as f:
+    path_file = path + "/config.json"
+    with open(path_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 # Search for devices:
@@ -373,18 +413,20 @@ else:
     fS = scp.sample_frequency_max/5
 
 # s, lock_in, params,__,__ = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)
-segnale, lock_in, params = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
+segnale, lock_in, params = Z_meter.Z_meter_excitation(1,f0,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
 
-saveJSON()
-
+path = ""
 def main():
     global scp, gen
     while process(input(prompt())):
     # pass
+        path = createDir()
+        saveJSON(path)
+
         if scp and gen:
             try:
                 if osc_settings() and gen_settings():
-                    acquire_data()
+                    acquire_data(path)
             except Exception as e:
                 print('Exception: ', e)
                 sys.exit(1)    
