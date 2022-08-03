@@ -315,9 +315,9 @@ def osc_settings():
     # print_device_info(scp)
      return True
 
-def acquire_data(path):
+def acquire_data(path, move):
     #if signalType == "ARBITRARY":
-    dataSUM = []
+    dataSUM = [0]*Nsamples
     for j in range(10):
         # Start measurement:
         scp.start()
@@ -325,7 +325,7 @@ def acquire_data(path):
         gen.start()
         # Wait for measurement to complete:
         while not scp.is_data_ready:
-            time.sleep(0.002)  # 10 ms delay, to save CPU time
+            time.sleep(0.01)  # 10 ms delay, to save CPU time
         # Stop generator:
         gen.stop()
         # else:
@@ -340,7 +340,8 @@ def acquire_data(path):
         dataOUT = scp.get_data()
         # y[0,:]=dataOUT[0]
         # y[1,:]=dataOUT[1]
-        # dataSUM = np.add(dataSUM, dataOUT)
+        if j > 1: # scarto i primi valori
+            dataSUM = np.add(dataSUM, dataOUT)
         # saveCSV(j, dataOUT, path)
         
         # PLOT
@@ -351,8 +352,8 @@ def acquire_data(path):
         print(j)
         if j <9:
             plt.cla() # Clear current axes
-    # dataMEAN = list(dataSUM)/10
-    # saveCSV(j, dataMEAN, path)
+    dataMEAN = dataSUM/8
+    saveCSV(j, list(dataMEAN), path, move)
 
     gen.output_on = False
 
@@ -368,8 +369,7 @@ def createDir():
     os.makedirs(new_path, exist_ok=True)
     return new_path
 
-def saveCSV(j, dataOUT, path):
-
+def saveCSV(j, dataOUT, path, move):
     # Output CSV data:
     filepath = path + "/" + str(j) + ".csv"
     csv_file = open(filepath, 'w')
@@ -422,21 +422,31 @@ def main():
     # pass
         path = createDir()
         saveJSON(path)
-
         if scp and gen:
-            try:
-                if osc_settings() and gen_settings():
-                    acquire_data(path)
-            except Exception as e:
-                print('Exception: ', e)
-                sys.exit(1)    
-            # Close oscilloscope:
-            del scp
-            # Close generator:
-            del gen
+            while True:
+                try:
+                    if osc_settings() and gen_settings():
+    
+                            move = input("r= right acquire, d=down aquire, c=close\n")
+                            if move in "r d":
+                                acquire_data(path, move)
+                            elif move == "c":
+                                print("close")
+                                sys.exit(0)
+                except Exception as e:
+                    print('Exception: ', e)
+                    sys.exit(1)    
+                # # Close oscilloscope:
+                # del scp
+                # # Close generator:
+                # del gen
         else:
             print('No oscilloscope available with block measurement support or generator available in the same unit!')
             sys.exit(1)
+        # Close oscilloscope:
+        del scp
+        # Close generator:
+        del gen
         sys.exit(0) # ref: https://docs.python.org/3/library/sys.html#sys.exit
                     # ZERO: "successful termination”
                     # NONZERO: "abnormal termination"
