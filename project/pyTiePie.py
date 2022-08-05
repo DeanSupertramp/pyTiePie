@@ -23,6 +23,7 @@ def command(args):
     global a
     global o
     global c # config measurement
+    global measType
     print('Running %s with args:' % command.__name__,*args.values(),sep=' ')
     # controllo se il comando è presente tra i segnali della libreria
     # ref: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
@@ -53,8 +54,11 @@ def command(args):
             
             if SIGNAL_TYPES[k2v].upper() == "ARBITRARY":
                 Nsamples=segnale.size
+                measType = 1
             else:
                 Nsamples=int(fS/f)
+                measType = 0
+
     except:
         if args["signalDC"].upper() in SIGNAL_TYPES.values(): # Only DC signal
             print("Command", args["signalDC"].upper(), "found!")
@@ -116,7 +120,10 @@ signal_dict = {"UNKNOWN" : libtiepie.ST_UNKNOWN,        # 0
                "ARBITRARY" : libtiepie.ST_ARBITRARY}    # 32
         
 def gen_settings():
-    global signalType
+    global glob_signalType
+    global glob_segnale
+    global glob_lock_in
+    global glob_params
     # ********** Generator settings: **********
     try:
         # gen.signal_type = signal_dict[signalType]    # ref: https://api.tiepie.com/libtiepie/0.4.3/group___s_t__.html
@@ -315,7 +322,7 @@ def osc_settings():
     # print_device_info(scp)
      return True
 
-def acquire_data(path, move):
+def acquire_data(i, k, path, move):
     #if signalType == "ARBITRARY":
     dataSUM = [0]*Nsamples
     for j in range(10):
@@ -353,7 +360,7 @@ def acquire_data(path, move):
         if j <9:
             plt.cla() # Clear current axes
     dataMEAN = dataSUM/8
-    saveCSV(j, list(dataMEAN), path, move)
+    saveCSV(i, k, list(dataMEAN), path, move)
 
     gen.output_on = False
 
@@ -369,9 +376,11 @@ def createDir():
     os.makedirs(new_path, exist_ok=True)
     return new_path
 
-def saveCSV(j, dataOUT, path, move):
+def saveCSV(i, k, dataOUT, path, move):
+    name = setName(i, k)
     # Output CSV data:
-    filepath = path + "/" + str(j) + ".csv"
+    # filepath = path + "/" + str(j) + ".csv"
+    filepath = path + "/" + name + ".csv"
     csv_file = open(filepath, 'w')
     try:
         csv_file.write('Sample')
@@ -392,7 +401,9 @@ def saveJSON(path):
     data = {"f0" : f0,
          "Nharm" : Nharm,
          "Tsignal" : Tsignal,
-         "fS" : fS}
+         "fS" : fS,
+         "Ns": Nsamples,
+         "measType": measType}
     path_file = path + "/config.json"
     with open(path_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
@@ -415,7 +426,11 @@ else:
 # s, lock_in, params,__,__ = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)
 segnale, lock_in, params = Z_meter.Z_meter_excitation(1,f0,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
 
+def setName(i, j):
+    return str(i) + "x" + str(j)
+
 path = ""
+
 def main():
     global scp, gen
     while process(input(prompt())):
@@ -423,23 +438,29 @@ def main():
         path = createDir()
         saveJSON(path)
         if scp and gen:
+            i = 0
+            j = 1
             while True:
                 try:
                     if osc_settings() and gen_settings():
-    
-                            move = input("r= right acquire, d=down aquire, c=close\n")
-                            if move in "r d":
-                                acquire_data(path, move)
+                            move = input("r=right acquire, d=down aquire, c=close\n")
+                            if move == "r":
+                                i = i + 1
+                                acquire_data(i, j, path, move)
+                            elif move == "d":
+                                i = 1
+                                j = j + 1
+                                acquire_data(i, j, path, move)
                             elif move == "c":
                                 print("close")
+                                # Close oscilloscope:
+                                del scp
+                                # Close generator:
+                                del gen
                                 sys.exit(0)
                 except Exception as e:
                     print('Exception: ', e)
                     sys.exit(1)    
-                # # Close oscilloscope:
-                # del scp
-                # # Close generator:
-                # del gen
         else:
             print('No oscilloscope available with block measurement support or generator available in the same unit!')
             sys.exit(1)

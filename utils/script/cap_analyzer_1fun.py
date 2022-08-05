@@ -184,20 +184,26 @@ root.withdraw()
 file_path = filedialog.askopenfilename()
 
 matrixList = sorted(os.listdir(os.path.dirname(file_path)))
+matrixList.pop() # delete last file (config)
 last_matrixList = matrixList[-1]
 row = int(last_matrixList.split("x")[0])
 column = int(last_matrixList.split("x")[1].split(".")[0])
 matrix = np.zeros(row*column)
 
-mat = scipy.io.loadmat(file_path)
-measType = mat['param']['measType'][0][0][0][0]
-if measType == 0:
-    print("Measurement Type: MONO")
-elif measType == 1:
-    print("Measurement Type: MULTI")
-else:
-    print("Measurement Type: NONE, quit...")
-    sys.exit(1)
+def checkMeasType():
+    try:
+        mat = scipy.io.loadmat(file_path)
+        measType = mat['param']['measType'][0][0][0][0]
+        if measType == 0:
+            print("Measurement Type: MONO")
+        elif measType == 1:
+            print("Measurement Type: MULTI")
+        else:
+            print("Measurement Type: NONE, quit...")
+            sys.exit(1)            
+        return measType
+    except Exception as e:
+        print('Exception: ', e)
 
 
 def readCSV(filepath):
@@ -205,12 +211,15 @@ def readCSV(filepath):
     return df
 
 def readJSON(filepath):
-    return json.load(filepath)
+    config_file = os.path.dirname(filepath) + "/config.json"
+    with open(config_file, "r") as read_content:
+        return json.load(read_content)
 
 if __name__ == '__main__':   
     for file in range(countFilef()):   
         if file_path:
             if file_path.split('.')[1] == "mat":
+                measType = checkMeasType()
                 mat = scipy.io.loadmat(os.path.dirname(file_path) + "/" + matrixList[file])
                 
                 f0 = mat['param']['f0'][0][0][0][0]
@@ -227,7 +236,14 @@ if __name__ == '__main__':
                 
             elif file_path.split('.')[1] == "csv":
                 df = readCSV(file_path)
-    
+                CH1 = df.Ch1
+                CH2 = df.Ch2
+                config = readJSON(file_path)
+                f0 = config['f0']
+                fS = config['fS']
+                Ns = config['Ns']
+                Nharm = config['Nharm']
+                measType = config['measType']
 
             
             Ns_cycle=fS/f0
@@ -259,11 +275,11 @@ if __name__ == '__main__':
                           #  / np.sum(s_harml[j_harm]**2)
                             
                     freq[j_harm]=f0*(j_harm+1)
-            VC = Vin - VR
+            # VC = Vin - VR
             
             # lock-in operation
-            Vin_lockin = np.dot(lock_in, Vin)
-            VR_lockin = np.dot(lock_in, VR)
+            Vin_lockin = np.dot(lock_in, CH2)
+            VR_lockin = np.dot(lock_in, CH1)
         
             #b,a = butter(2, [0.25, 1.5*Nharm]*f0/(fS/2), btype='bandpass')
             b,a = butter(2, 2*Nharm*f0/(fS/2), btype='lowpass') # ref: https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html
@@ -291,27 +307,27 @@ if __name__ == '__main__':
                 plt.xlabel('samples')
                 plt.plot(VR)
             
-                plt.figure()
-                plt.title("VC")
-                plt.ylabel('Amplitude [V]')
-                plt.xlabel('samples')
-                plt.plot(VC)
+                # plt.figure()
+                # plt.title("VC")
+                # plt.ylabel('Amplitude [V]')
+                # plt.xlabel('samples')
+                # plt.plot(VC)
                 
-                plt.figure()
-                plt.title("Lock-in output Real part")
-                plt.plot(freq, Vin_lockin.real, label = 'Vin')
-                plt.plot(freq, VR_lockin.real, label='VR')
-                plt.ylabel('Real part value')
-                plt.xlabel('Frequency [Hz]')
-                plt.legend()
+                # plt.figure()
+                # plt.title("Lock-in output Real part")
+                # plt.plot(freq, Vin_lockin.real, label = 'Vin')
+                # plt.plot(freq, VR_lockin.real, label='VR')
+                # plt.ylabel('Real part value')
+                # plt.xlabel('Frequency [Hz]')
+                # plt.legend()
             
-                plt.figure()
-                plt.title("Lock-in output Imag part")
-                plt.plot(freq, Vin_lockin.imag, label = 'Vin')
-                plt.plot(freq, VR_lockin.imag, label = 'VR')
-                plt.ylabel('Real part value')
-                plt.xlabel('Frequency [Hz]')
-                plt.legend()
+                # plt.figure()
+                # plt.title("Lock-in output Imag part")
+                # plt.plot(freq, Vin_lockin.imag, label = 'Vin')
+                # plt.plot(freq, VR_lockin.imag, label = 'VR')
+                # plt.ylabel('Real part value')
+                # plt.xlabel('Frequency [Hz]')
+                # plt.legend()
                   
                 plt.figure()
                 plt.title("Signals Filtered")

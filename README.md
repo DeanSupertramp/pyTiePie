@@ -138,6 +138,15 @@ This is a list of things you need for use the software and how to install them.
     ```sh
     pip install matplotlib
     ```
+  * GitPython [reference here](https://gitpython.readthedocs.io/en/stable/)
+    ```sh
+    pip install gitpython
+    ```
+  * PyUsb [reference here](https://pypi.org/project/pyusb/)
+    ```sh
+    pip install pyusb
+    ```
+    https://pypi.org/project/pyusb/
 
 ### Installation
 1. Clone the repo
