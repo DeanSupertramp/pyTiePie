@@ -15,6 +15,9 @@ import json
 
 import git # gitpython
 
+Nsamples = 0
+measType = 0
+f = 0.0
 
 def command(args):
     global k2v
@@ -53,7 +56,7 @@ def command(args):
                     sys.exit(1)
             
             if SIGNAL_TYPES[k2v].upper() == "ARBITRARY":
-                Nsamples=segnale.size
+                Nsamples=glob_segnale.size
                 measType = 1
             else:
                 Nsamples=int(fS/f)
@@ -131,7 +134,9 @@ def gen_settings():
         # see const.py for signal definitions and types
         if SIGNAL_TYPES[k2v].upper() == "ARBITRARY":
             segnale, lock_in, params = Z_meter.Z_meter_excitation(a,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
-
+            glob_segnale = segnale
+            glob_lock_in = lock_in
+            glob_params = params
             # Select frequency mode:
             gen.frequency_mode = libtiepie.FM_SAMPLEFREQUENCY
             # Set sample frequency:
@@ -397,8 +402,8 @@ def saveCSV(i, k, dataOUT, path, move):
     finally:
         csv_file.close()
         
-def saveJSON(path):
-    data = {"f0" : f0,
+def saveJSON(path, f):
+    data = {"f0" : f,
          "Nharm" : Nharm,
          "Tsignal" : Tsignal,
          "fS" : fS,
@@ -424,7 +429,7 @@ else:
     fS = scp.sample_frequency_max/5
 
 # s, lock_in, params,__,__ = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)
-segnale, lock_in, params = Z_meter.Z_meter_excitation(1,f0,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
+# segnale, lock_in, params = Z_meter.Z_meter_excitation(1,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
 
 def setName(i, j):
     return str(i) + "x" + str(j)
@@ -435,8 +440,10 @@ def main():
     global scp, gen
     while process(input(prompt())):
     # pass
+        segnale, lock_in, params = Z_meter.Z_meter_excitation(1,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
+
         path = createDir()
-        saveJSON(path)
+        saveJSON(path, f)
         if scp and gen:
             i = 0
             j = 1

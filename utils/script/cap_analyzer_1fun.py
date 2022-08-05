@@ -21,10 +21,6 @@ import os
 import pandas as pd
 import json
 
-# import git # gitpython
-
-
-
 def clear_all():
     """Clears all the variables from the workspace of the spyder application."""
     gl = globals().copy()
@@ -143,7 +139,6 @@ def funPhasor(float_elec, file):
         plt.plot(freq, RC, label = "RC")
         plt.plot(freq, modelCR(freq, *popt2), label = "RC fitted")
         plt.legend()
-    
     return Cestimated_mean
 
 def countFilef():
@@ -221,7 +216,6 @@ if __name__ == '__main__':
             if file_path.split('.')[1] == "mat":
                 measType = checkMeasType()
                 mat = scipy.io.loadmat(os.path.dirname(file_path) + "/" + matrixList[file])
-                
                 f0 = mat['param']['f0'][0][0][0][0]
                 fS = mat['param']['fS'][0][0][0][0]
                 Ns = mat['param']['Ns'][0][0][0][0]
@@ -233,7 +227,6 @@ if __name__ == '__main__':
                 CH2 = mat['signals']['CH2'][0][0]
                 Zcoil = mat['results']['Zcoil'][0][0]
                 Ccoil = mat['results']['Lcoil'][0][0][0]
-                
             elif file_path.split('.')[1] == "csv":
                 df = readCSV(file_path)
                 CH1 = df.Ch1
@@ -245,7 +238,6 @@ if __name__ == '__main__':
                 Nharm = config['Nharm']
                 measType = config['measType']
 
-            
             Ns_cycle=fS/f0
             Ncycles=Ns/Ns_cycle
             
