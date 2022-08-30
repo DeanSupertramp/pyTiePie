@@ -14,6 +14,7 @@ from MyArgParser import MyArgParser
 import json
 import git # gitpython
 
+<<<<<<< HEAD
 f = 1000.0
 a = 1.0
 Nsamples = 1000
@@ -30,6 +31,11 @@ signal_dict = {"UNKNOWN" : libtiepie.ST_UNKNOWN,        # 0
                "DC" : libtiepie.ST_DC,                  # 8
                "NOISE" : libtiepie.ST_NOISE,            # 16
                "ARBITRARY" : libtiepie.ST_ARBITRARY}    # 32
+=======
+Nsamples = 0
+measType = 0
+f = 0.0
+>>>>>>> 2907a4817cd740399dccf779cd7d66211be449b0
 
 def command(args):
     global k2v
@@ -63,8 +69,12 @@ def command(args):
                     print("offset out of MIN range")
                     sys.exit(1)
             if SIGNAL_TYPES[k2v].upper() == "ARBITRARY":
+<<<<<<< HEAD
                 Nsamples=segnale.size
                 # Nsamples=int(fS/f)
+=======
+                Nsamples=glob_segnale.size
+>>>>>>> 2907a4817cd740399dccf779cd7d66211be449b0
                 measType = 1
             else:
                 Nsamples=int(fS/f)
@@ -115,7 +125,14 @@ def gen_settings():
         gen.signal_type = k2v
         # see const.py for signal definitions and types
         if SIGNAL_TYPES[k2v].upper() == "ARBITRARY":
+<<<<<<< HEAD
             # segnale, lock_in, params = Z_meter.Z_meter_excitation(a,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
+=======
+            segnale, lock_in, params = Z_meter.Z_meter_excitation(a,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
+            glob_segnale = segnale
+            glob_lock_in = lock_in
+            glob_params = params
+>>>>>>> 2907a4817cd740399dccf779cd7d66211be449b0
             # Select frequency mode:
             gen.frequency_mode = libtiepie.FM_SAMPLEFREQUENCY
             # Set sample frequency:
@@ -364,9 +381,14 @@ def saveCSV(i, k, dataOUT, path, move):
     finally:
         csv_file.close()
         
+<<<<<<< HEAD
 def saveJSON(path, ampl, f_0):
     data = {"f0" : f_0,
          "a" : ampl,
+=======
+def saveJSON(path, f):
+    data = {"f0" : f,
+>>>>>>> 2907a4817cd740399dccf779cd7d66211be449b0
          "Nharm" : Nharm,
          "Tsignal" : Tsignal,
          "fS" : fS,
@@ -390,14 +412,32 @@ if "220" in tiepieList().split()[1] : # resolution: 14 bit
 else:
     fS = scp.sample_frequency_max/5
 
+<<<<<<< HEAD
 segnale, lock_in, params = Z_meter.Z_meter_excitation(a,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
+=======
+# s, lock_in, params,__,__ = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)
+# segnale, lock_in, params = Z_meter.Z_meter_excitation(1,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
+
+def setName(i, j):
+    return str(i) + "x" + str(j)
+
+path = ""
+>>>>>>> 2907a4817cd740399dccf779cd7d66211be449b0
 
 def main():
     global a, f, segnale, Nsamples
     global scp, gen
     while process(input(prompt())):
+<<<<<<< HEAD
         path = createDir()
         saveJSON(path, a, f)
+=======
+    # pass
+        segnale, lock_in, params = Z_meter.Z_meter_excitation(1,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
+
+        path = createDir()
+        saveJSON(path, f)
+>>>>>>> 2907a4817cd740399dccf779cd7d66211be449b0
         if scp and gen:
             i = 0
             j = 1

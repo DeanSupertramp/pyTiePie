@@ -136,7 +136,6 @@ def funPhasor(float_elec, plotFlag):
         plt.plot(freq, RC, label = "RC")
         plt.plot(freq, modelCR(freq, *popt2), label = "RC fitted")
         plt.legend()
-    
     return Cestimated_mean
 
 def countFilef():
@@ -217,7 +216,6 @@ if __name__ == '__main__':
         if file_path:
             if file_path.split('.')[1] == "mat":
                 mat = scipy.io.loadmat(os.path.dirname(file_path) + "/" + matrixList[file])
-                
                 f0 = mat['param']['f0'][0][0][0][0]
                 fS = mat['param']['fS'][0][0][0][0]
                 Ns = mat['param']['Ns'][0][0][0][0]
@@ -229,9 +227,14 @@ if __name__ == '__main__':
                 CH2 = mat['signals']['CH2'][0][0]
                 Zcoil = mat['results']['Zcoil'][0][0]
                 Ccoil = mat['results']['Lcoil'][0][0][0]
+<<<<<<< HEAD
                 
             elif file_path.split('.')[1] == "csv": # BISOGNA AGGIUNGERE UNA FUNZ ITERATIVA
                 df = pd.read_csv(os.path.dirname(file_path) + "/" + matrixList[file])
+=======
+            elif file_path.split('.')[1] == "csv":
+                df = readCSV(file_path)
+>>>>>>> 2907a4817cd740399dccf779cd7d66211be449b0
                 CH1 = df.Ch1
                 CH2 = df.Ch2
                 config = readJSON(file_path)
@@ -240,8 +243,13 @@ if __name__ == '__main__':
                 Ns = config['Ns']
                 Nharm = config['Nharm']
 
+<<<<<<< HEAD
             Ns_cycle=int(fS/f0)
             Ncycles=int(Ns/Ns_cycle)
+=======
+            Ns_cycle=fS/f0
+            Ncycles=Ns/Ns_cycle
+>>>>>>> 2907a4817cd740399dccf779cd7d66211be449b0
             
             # Time axis
             t = np.arange(Ns-1)/fS # Time vector
