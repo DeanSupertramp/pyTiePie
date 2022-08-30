@@ -1,4 +1,4 @@
-def Z_meter_excitation(a, f0,Nharm,Tsignal,fS):
+def Z_meter_excitation(a, f0, Nharm, Tsignal,fS):
     # from math import sin
     # f0=4e3                        # freq. fondamentale    4 KHz
     # Nharm=50                      # n° armoniche          50
@@ -7,12 +7,12 @@ def Z_meter_excitation(a, f0,Nharm,Tsignal,fS):
     import numpy as np
     Ns=int(Tsignal*fS/1000)     # n° campioni [ms * MHz / 1000 = 1e-3 * 1e6 / 1e3]                      200 000
     Ns_cycle=int(fS/f0)         # n° campioni per ciclo : freq. campionamento / freq fondamentale       25 000
-    Ncycles=int(Ns/Ns_cycle)    # n° campioni                                                           8
+    Ncycles=int(Ns/Ns_cycle)    # n° cicli                                                              8
     # time_axis
-    time=np.arange(0,Ns)/fS;    # array([0.00000e+00, 1.00000e-08, 2.00000e-08, ..., 1.99997e-03, 1.99998e-03, 1.99999e-03])
+    time=np.arange(0,Ns)/fS    # array([0.00000e+00, 1.00000e-08, 2.00000e-08, ..., 1.99997e-03, 1.99998e-03, 1.99999e-03])
 
-    time_lockin=np.arange(0,(Ns_cycle*(Ncycles-1)))/fS;     # array([0.00000e+00, 1.00000e-08, 2.00000e-08, ..., 1.74997e-03, 1.74998e-03, 1.74999e-03])
-    s=np.zeros([1,int(Ns)+4]);                              # matrice 1 riga, Ns+4 colonne
+    time_lockin=np.arange(0,(Ns_cycle*(Ncycles-1)))/fS     # array([0.00000e+00, 1.00000e-08, 2.00000e-08, ..., 1.74997e-03, 1.74998e-03, 1.74999e-03])
+    s=np.zeros([1,int(Ns)+4])                              # matrice 1 riga, Ns+4 colonne
     s_harm=np.empty((Nharm,Ns),'float')
     s_harml=np.empty((Nharm,Ns_cycle*(Ncycles-1)),'float')
     lock_in=np.ones((Nharm,Ns_cycle*(Ncycles-1)),dtype=np.complex_)
@@ -21,10 +21,10 @@ def Z_meter_excitation(a, f0,Nharm,Tsignal,fS):
     ampl=np.ones((Nharm,1),dtype=np.complex_)
     
     for j_harm in range(int(Nharm)):
-        s_harm[j_harm,:] = (np.cos(2 * np.pi * f0 * j_harm * time + np.pi * (j_harm * (j_harm - 1)) / Nharm)); # [2 pi f k t + pi(k(k-1)) / Nharm]
-        s_harml[j_harm,:] = (np.cos(2 * np.pi * f0 * j_harm * time_lockin + np.pi * (j_harm * (j_harm - 1)) / Nharm));
-        lock_in[j_harm,:] = ( np.exp(-1j * np.pi * (j_harm * (j_harm - 1)) / Nharm) * np.exp(-1j * 2 * np.pi * f0 * j_harm * time_lockin) / np.sum(s_harml[j_harm,:]**2) );
-        freq[j_harm] = f0 * (j_harm + 1);
+        s_harm[j_harm,:] = (np.cos(2 * np.pi * f0 * j_harm * time + np.pi * (j_harm * (j_harm - 1)) / Nharm)) # [2 pi f k t + pi(k(k-1)) / Nharm]
+        s_harml[j_harm,:] = (np.cos(2 * np.pi * f0 * j_harm * time_lockin + np.pi * (j_harm * (j_harm - 1)) / Nharm))
+        lock_in[j_harm,:] = ( np.exp(-1j * np.pi * (j_harm * (j_harm - 1)) / Nharm) * np.exp(-1j * 2 * np.pi * f0 * j_harm * time_lockin) / np.sum(s_harml[j_harm,:]**2) )
+        freq[j_harm] = f0 * (j_harm + 1)
         
     # ******* PLOT DEBUG **********
     from matplotlib import pyplot as pl
@@ -38,7 +38,7 @@ def Z_meter_excitation(a, f0,Nharm,Tsignal,fS):
     # Praticamente l'array somma inizia due colonne dopo e finisce due colonne prima
 
     # ******* PLOT DEBUG **********
-    times = np.arange(0,Ns+4)/fS;
+    times = np.arange(0,Ns+4)/fS
     pl.plot(times, s[0])
     
     for j_harm in range(int(Nharm)):
@@ -49,7 +49,7 @@ def Z_meter_excitation(a, f0,Nharm,Tsignal,fS):
 
     params={'Ns':Ns, 'Ns_cycle':Ns_cycle, 'Ncycles':Ncycles, 'freq':freq, 'time':time}
     
-    return s, lock_in, params, s_harm, s_harml,
+    return s, lock_in, params, s_harm, s_harml
         #  s = segnale multitono generato
         #  lock_in = segnale sinusoidale generato tramite espressione esponenziale
 

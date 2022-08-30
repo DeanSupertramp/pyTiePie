@@ -10,20 +10,14 @@ import tkinter as tk
 from tkinter import filedialog
 import scipy.io
 import numpy as np
-
 from matplotlib import pyplot as plt
 from scipy.signal import butter
 from scipy import signal
-
 from scipy.optimize import curve_fit
 import sys
 import os
 import pandas as pd
 import json
-
-# import git # gitpython
-
-
 
 def clear_all():
     """Clears all the variables from the workspace of the spyder application."""
@@ -48,7 +42,7 @@ def modelCX(x, p1, p2):
     # return p2+1/(2*np.pi*x*p1)
     return p2+(1/x)*1/(2*np.pi*p1)
 
-def funPhasor(float_elec, file):
+def funPhasor(float_elec, plotFlag):
     if float_elec == 0:
         phasorVC = phasorVin - phasorVR
         ZC = (phasorVC/phasorVR)*R
@@ -65,15 +59,14 @@ def funPhasor(float_elec, file):
         Cestimated = 1/(2*np.pi*freq*np.squeeze(XC))*1e12
         Cestimated_mean = np.mean(Cestimated[0:40]) #ad alte freq la cap varia molto
         # print("Cestimated_mean: ", Cestimated_mean, "pF")
-        
+    else:
+        print("arq sono qui cucu")
     # FITTING
     popt, pcov = curve_fit(modelCX, freq, np.squeeze(XC), p0 = [2e-11, 0]) 
     Cestimated2 = popt[0]*1e12
     # print("C estimated from fitting: ", Cestimated2, "pF")
-
     popt2, pcov2 = curve_fit(modelCR, freq, np.squeeze(RC))
     # print("R estimated from fitting: ", popt2, "ohm")
-    
     if plotFlag == 1:
         plt.figure()
         plt.subplot(2,2,1)
@@ -152,11 +145,10 @@ def countFilef():
     # check if current path is a file
         if os.path.isfile(os.path.join(os.path.dirname(file_path), path)):
             countFile += 1
+    if file_path.split('.')[1] == "csv":
+        countFile -= 1
     print('File count:', countFile)
     return countFile
-
-# for file in range(countFilef()):
-#     print(os.path.dirname(file_path) + "/" + matrixList[file])
 
 clear_all()
 
@@ -180,11 +172,16 @@ else:
     sys.exit(1)
 
 root = tk.Tk()
+# root.lift()
+# root.wm_attributes('-topmost', 1)
 root.withdraw()
 file_path = filedialog.askopenfilename()
 
 matrixList = sorted(os.listdir(os.path.dirname(file_path)))
-matrixList.pop() # delete last file (config)
+
+if file_path.split('.')[1] == "csv":
+    matrixList.pop() # delete last file (config)
+
 last_matrixList = matrixList[-1]
 row = int(last_matrixList.split("x")[0])
 column = int(last_matrixList.split("x")[1].split(".")[0])
@@ -192,8 +189,12 @@ matrix = np.zeros(row*column)
 
 def checkMeasType():
     try:
-        mat = scipy.io.loadmat(file_path)
-        measType = mat['param']['measType'][0][0][0][0]
+        if file_path.split('.')[1] == "mat":
+            mat = scipy.io.loadmat(file_path)
+            measType = mat['param']['measType'][0][0][0][0]
+        elif file_path.split('.')[1] == "csv":
+            config = readJSON(file_path)
+            measType = config['measType']
         if measType == 0:
             print("Measurement Type: MONO")
         elif measType == 1:
@@ -205,21 +206,16 @@ def checkMeasType():
     except Exception as e:
         print('Exception: ', e)
 
-
-def readCSV(filepath):
-    df = pd.read_csv(filepath)
-    return df
-
 def readJSON(filepath):
     config_file = os.path.dirname(filepath) + "/config.json"
     with open(config_file, "r") as read_content:
         return json.load(read_content)
 
-if __name__ == '__main__':   
+if __name__ == '__main__':
+    measType = checkMeasType()
     for file in range(countFilef()):   
         if file_path:
             if file_path.split('.')[1] == "mat":
-                measType = checkMeasType()
                 mat = scipy.io.loadmat(os.path.dirname(file_path) + "/" + matrixList[file])
                 
                 f0 = mat['param']['f0'][0][0][0][0]
@@ -234,8 +230,8 @@ if __name__ == '__main__':
                 Zcoil = mat['results']['Zcoil'][0][0]
                 Ccoil = mat['results']['Lcoil'][0][0][0]
                 
-            elif file_path.split('.')[1] == "csv":
-                df = readCSV(file_path)
+            elif file_path.split('.')[1] == "csv": # BISOGNA AGGIUNGERE UNA FUNZ ITERATIVA
+                df = pd.read_csv(os.path.dirname(file_path) + "/" + matrixList[file])
                 CH1 = df.Ch1
                 CH2 = df.Ch2
                 config = readJSON(file_path)
@@ -243,11 +239,9 @@ if __name__ == '__main__':
                 fS = config['fS']
                 Ns = config['Ns']
                 Nharm = config['Nharm']
-                measType = config['measType']
 
-            
-            Ns_cycle=fS/f0
-            Ncycles=Ns/Ns_cycle
+            Ns_cycle=int(fS/f0)
+            Ncycles=int(Ns/Ns_cycle)
             
             # Time axis
             t = np.arange(Ns-1)/fS # Time vector
@@ -256,8 +250,10 @@ if __name__ == '__main__':
             len_time_lockin = len(time_lockin)
         else:
             print("no file")
+            sys.exit(1)
             
         s_harml = np.zeros([Nharm,len_time_lockin])
+        # s_harml=np.empty((Nharm,Ns_cycle*(Ncycles-1)),'float')
             
         if measType == 0:
             sl=np.sin(2*np.pi*f0*time_lockin)
@@ -265,6 +261,8 @@ if __name__ == '__main__':
             freq=f0
         elif measType == 1:
             lock_in = np.zeros([Nharm,len_time_lockin], dtype = 'complex_')
+            #lock_in=np.ones((Nharm,Ns_cycle*(Ncycles-1)),dtype=np.complex_)
+
             freq = np.zeros(Nharm)
             
             for j_harm in range(Nharm):
@@ -278,11 +276,11 @@ if __name__ == '__main__':
             # VC = Vin - VR
             
             # lock-in operation
-            Vin_lockin = np.dot(lock_in, CH2)
-            VR_lockin = np.dot(lock_in, CH1)
+            Vin_lockin = np.dot(lock_in, CH2.transpose()[0:len_time_lockin])
+            VR_lockin = np.dot(lock_in, CH1.transpose()[0:len_time_lockin])
         
             #b,a = butter(2, [0.25, 1.5*Nharm]*f0/(fS/2), btype='bandpass')
-            b,a = butter(2, 2*Nharm*f0/(fS/2), btype='lowpass') # ref: https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html
+            b,a = butter(2, 2*Nharm*f0/(fS), btype='lowpass') # ref: https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html
         
             CH1f = signal.filtfilt(b, a, CH1, padtype = None) # ref: https://dsp.stackexchange.com/questions/11466/differences-between-python-and-matlab-filtfilt-function
             CH2f = signal.filtfilt(b, a, CH2, padtype = None)
@@ -293,19 +291,19 @@ if __name__ == '__main__':
             # PHASOR lock-in operation
             phasorVin = np.dot(lock_in, Vin_f)
             phasorVR = np.dot(lock_in, VRf)
-            
+                        
             if plotFlag == 1:
                 plt.figure()
                 plt.title("Vin")
                 plt.ylabel('Amplitude [V]')
                 plt.xlabel('samples')
-                plt.plot(Vin)
+                plt.plot(CH2)
             
                 plt.figure()
                 plt.title("VR")
                 plt.ylabel('Amplitude [V]')
                 plt.xlabel('samples')
-                plt.plot(VR)
+                plt.plot(CH1)
             
                 # plt.figure()
                 # plt.title("VC")
@@ -362,17 +360,17 @@ if __name__ == '__main__':
                 plt.xlabel('Frequency [Hz]')
                 plt.legend()
             
-            matrix[file] =  funPhasor(float_elec, file)
+            matrix[file] =  funPhasor(float_elec, plotFlag)
 
         else:
             print("measType is not defined")
     
-    matrix = matrix.reshape(row, column)
+    matrix = matrix.reshape(column, row)
     # print(matrix)
     plt.figure()
     # ref: https://docs.python.org/3/library/os.path.html#os.path.normpath
     plt.title("Scan results for C, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
     plt.imshow(matrix)
-    lbl = plt.colorbar()
+    lbl = plt.colorbar(pad = 0.15)
     lbl.set_label('[pF]', rotation=270, labelpad=15) 
     print(" ### --- END --- ###")

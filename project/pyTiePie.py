@@ -12,9 +12,24 @@ import Z_meter
 import argparse
 from MyArgParser import MyArgParser
 import json
-
 import git # gitpython
 
+f = 1000.0
+a = 1.0
+Nsamples = 1000
+measType = 1
+f0=4e3              #freq. fondamentale
+Nharm=50            # n° armoniche
+Tsignal=2           # in [ms]
+path = ""
+
+signal_dict = {"UNKNOWN" : libtiepie.ST_UNKNOWN,        # 0
+               "SINE" : libtiepie.ST_SINE,              # 1
+               "TRIANGLE" : libtiepie.ST_TRIANGLE,      # 2
+               "SQUARE" : libtiepie.ST_SQUARE,          # 4
+               "DC" : libtiepie.ST_DC,                  # 8
+               "NOISE" : libtiepie.ST_NOISE,            # 16
+               "ARBITRARY" : libtiepie.ST_ARBITRARY}    # 32
 
 def command(args):
     global k2v
@@ -24,6 +39,7 @@ def command(args):
     global o
     global c # config measurement
     global measType
+    global segnale
     print('Running %s with args:' % command.__name__,*args.values(),sep=' ')
     # controllo se il comando è presente tra i segnali della libreria
     # ref: https://www.geeksforgeeks.org/python-get-key-from-value-in-dictionary/
@@ -34,11 +50,6 @@ def command(args):
             f = args["freq"]
             print("frequency setted at :\t", str(f), " Hz")
             c = args["config"]
-            # if c.upper() in "SERIES FLOAT":
-            #     print("configuration measurement setted at: ", c)
-            # else:
-            #     print("configuration measurement not found!")
-            #     sys.exit(1)
             # controllo se il segnale accetta il parametro offset
             if bool(STM_OFFSET & k2v ): # MASK
                 print("Set Offset:\t", args["offset"])
@@ -51,14 +62,13 @@ def command(args):
                 else:
                     print("offset out of MIN range")
                     sys.exit(1)
-            
             if SIGNAL_TYPES[k2v].upper() == "ARBITRARY":
                 Nsamples=segnale.size
+                # Nsamples=int(fS/f)
                 measType = 1
             else:
                 Nsamples=int(fS/f)
                 measType = 0
-
     except:
         if args["signalDC"].upper() in SIGNAL_TYPES.values(): # Only DC signal
             print("Command", args["signalDC"].upper(), "found!")
@@ -97,41 +107,15 @@ def command(args):
     else:
         print("configuration measurement not found!")
         sys.exit(1)
-
-    # # controllo se il segnale accetta il parametro offset
-    # if bool(STM_OFFSET & k2v ): # MASK
-    #     print("Set Offset: ", args["offset"])
-    #     if args["offset"] > gen.offset_min:
-    #         if args["offset"] < gen.offset_max:
-    #             o = args["offset"]
-    #         else:
-    #             print("offset out of MAX range")
-    #             sys.exit(1)
-    #     else:
-    #         print("offset out of MIN range")
-    #         sys.exit(1)
-           
-signal_dict = {"UNKNOWN" : libtiepie.ST_UNKNOWN,        # 0
-               "SINE" : libtiepie.ST_SINE,              # 1
-               "TRIANGLE" : libtiepie.ST_TRIANGLE,      # 2
-               "SQUARE" : libtiepie.ST_SQUARE,          # 4
-               "DC" : libtiepie.ST_DC,                  # 8
-               "NOISE" : libtiepie.ST_NOISE,            # 16
-               "ARBITRARY" : libtiepie.ST_ARBITRARY}    # 32
-        
+                   
 def gen_settings():
-    global glob_signalType
-    global glob_segnale
-    global glob_lock_in
-    global glob_params
     # ********** Generator settings: **********
     try:
         # gen.signal_type = signal_dict[signalType]    # ref: https://api.tiepie.com/libtiepie/0.4.3/group___s_t__.html
         gen.signal_type = k2v
         # see const.py for signal definitions and types
         if SIGNAL_TYPES[k2v].upper() == "ARBITRARY":
-            segnale, lock_in, params = Z_meter.Z_meter_excitation(a,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
-
+            # segnale, lock_in, params = Z_meter.Z_meter_excitation(a,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
             # Select frequency mode:
             gen.frequency_mode = libtiepie.FM_SAMPLEFREQUENCY
             # Set sample frequency:
@@ -153,8 +137,6 @@ def gen_settings():
             gen.set_data(dataIN)
         # Print generator info:
         # print_device_info(gen)
-
-        # if signalType == "DC":
         elif SIGNAL_TYPES[k2v].upper() in "SINE TRIANGLE SQUARE NOISE":
             # Set frequency:
             gen.frequency = f  # 1 kHz
@@ -165,7 +147,6 @@ def gen_settings():
             # Enable output:
             gen.output_on = True
             gen.mode = libtiepie.GM_CONTINUOUS
-
         elif SIGNAL_TYPES[k2v].upper() == "DC":
             # Set offset:
             gen.offset = o  # 0 V
@@ -177,13 +158,11 @@ def gen_settings():
         print('gen Exception: ', e)
         # sys.exit(1)
         return False
-    # else:
-    #     print("signalType not correct")
-    #     return False
 
 # gen.signal_types restituisce maschera in bit dei segnali
 # from libtiepie.utils import signal_type_str # funzione builtin in libtiepie.utils
 # print('  Signal types              : ' + signal_type_str(gen.signal_types))
+
 # Commands configuration
 tiepie_setSignal = MyArgParser("set", description = "select signal") # check in libtiepie.const
 tiepie_setSignal.add_argument("signal", type=str, help='Signal Type')
@@ -191,7 +170,6 @@ tiepie_setSignal.add_argument("ampl", nargs='?', default = 1.0, type=float, help
 tiepie_setSignal.add_argument("freq", nargs='?', default = 100, type=float, help='Frequency')
 tiepie_setSignal.add_argument("offset", nargs='?', default = 0, type=float, help='Offset')
 tiepie_setSignal.add_argument("config", nargs='?', default = "Series", type=str, help='Config Measurement') 
- 
 
 tiepie_setDC = MyArgParser("setDC", description = "set DC") # check in libtiepie.const
 tiepie_setDC.add_argument("offsetDC", type=float, help='offset') 
@@ -236,7 +214,6 @@ def tiepieList():
     if len(libtiepie.device_list) > 0:
         print()
         print('Available devices:')
-    
         for item in libtiepie.device_list:
             print('  Name: ' + item.name)
             print('    Serial number  : ' + str(item.serial_number))
@@ -335,22 +312,12 @@ def acquire_data(i, k, path, move):
             time.sleep(0.01)  # 10 ms delay, to save CPU time
         # Stop generator:
         gen.stop()
-        # else:
-        #     # Wait for keystroke:
-        #     print('Press Enter to stop signal generation...')
-        #     if sys.version_info < (3, 0):  # Python 2.x
-        #         raw_input()
-        #     else:  # Python 3.x
-        #         input()
-        # Disable output:
         # Get data:
         dataOUT = scp.get_data()
         # y[0,:]=dataOUT[0]
         # y[1,:]=dataOUT[1]
         if j > 1: # scarto i primi valori
-            dataSUM = np.add(dataSUM, dataOUT)
-        # saveCSV(j, dataOUT, path)
-        
+            dataSUM = np.add(dataSUM, dataOUT)        
         # PLOT
         plt.plot(np.arange(0,np.size(dataOUT,1),1),np.transpose(dataOUT))
         time.sleep(.1)
@@ -361,7 +328,7 @@ def acquire_data(i, k, path, move):
             plt.cla() # Clear current axes
     dataMEAN = dataSUM/8
     saveCSV(i, k, list(dataMEAN), path, move)
-
+    # Disable output:
     gen.output_on = False
 
 def createDir():
@@ -397,8 +364,9 @@ def saveCSV(i, k, dataOUT, path, move):
     finally:
         csv_file.close()
         
-def saveJSON(path):
-    data = {"f0" : f0,
+def saveJSON(path, ampl, f_0):
+    data = {"f0" : f_0,
+         "a" : ampl,
          "Nharm" : Nharm,
          "Tsignal" : Tsignal,
          "fS" : fS,
@@ -408,14 +376,13 @@ def saveJSON(path):
     with open(path_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
+def setName(i, j):
+    return str("{:02d}".format(i)) + "x" + str("{:02d}".format(j))
+
 # Search for devices:
 libtiepie.device_list.update()
-tiepieList() # Mostra una lista dei dispositivi collegati e le loro funzioni
+# tiepieList() # Mostra una lista dei dispositivi collegati e le loro funzioni
 scp, gen = tiepieInit()
-
-f0=4e3              #freq. fondamentale
-Nharm=50            # n° armoniche
-Tsignal=2           # in [ms]
 
 # fS=1e8              # in [Hz] 100 MHz
 if "220" in tiepieList().split()[1] : # resolution: 14 bit
@@ -423,20 +390,14 @@ if "220" in tiepieList().split()[1] : # resolution: 14 bit
 else:
     fS = scp.sample_frequency_max/5
 
-# s, lock_in, params,__,__ = Z_meter.Z_meter_excitation(f0,Nharm,Tsignal,fS,5)
-segnale, lock_in, params = Z_meter.Z_meter_excitation(1,f0,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
-
-def setName(i, j):
-    return str(i) + "x" + str(j)
-
-path = ""
+segnale, lock_in, params = Z_meter.Z_meter_excitation(a,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
 
 def main():
+    global a, f, segnale, Nsamples
     global scp, gen
     while process(input(prompt())):
-    # pass
         path = createDir()
-        saveJSON(path)
+        saveJSON(path, a, f)
         if scp and gen:
             i = 0
             j = 1
