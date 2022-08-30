@@ -7,8 +7,9 @@ Created on Mon Jun 13 14:48:08 2022
 """
 import pandas as pd
 
-path = "/home/alecce/Scrivania/Test_TiePie/repo/pyTiePie/utils/Spice_Circuit/RC_Difference_LTSpice.log"
-#path = "C:/Users/andry/Desktop/Alecce/repo/pyTiePie/utils/Spice_Circuit/RC_Difference_LTSpice.log"
+# path = "/home/alecce/Scrivania/Test_TiePie/repo/pyTiePie/utils/Spice_Circuit/RC_Difference_LTSpice.log"
+# path = "C:/Users/andry/Desktop/Alecce/repo/pyTiePie/utils/Spice_Circuit/RC_Difference_LTSpice.log"
+path = "C:/Users/andry/Desktop/pyTiePie/utils/Spice_Circuit/RC_Difference_LTSpice.log"
 lunghezza = 100
 
 def getMatrix():

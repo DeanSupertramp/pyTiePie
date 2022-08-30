@@ -28,6 +28,11 @@ def clear_all():
         if 'module' in str(globals()[var]): continue
         del globals()[var]
 
+clear_all()
+
+R=196*1e3; # [Ohm]
+XC = 0
+
 def modelCR(x, p0, p1, p2, p3, p4, p5, p6):
     return p0+p1*x+p2*x**2+p3*x**3+p4*x**4+p5*x**5+p6*x**6 # poly
     #return p0 - p1 * p2**x
@@ -60,7 +65,7 @@ def funPhasor(float_elec, plotFlag):
         Cestimated_mean = np.mean(Cestimated[0:40]) #ad alte freq la cap varia molto
         # print("Cestimated_mean: ", Cestimated_mean, "pF")
     else:
-        print("arq sono qui cucu")
+        print("invalid")
     # FITTING
     popt, pcov = curve_fit(modelCX, freq, np.squeeze(XC), p0 = [2e-11, 0]) 
     Cestimated2 = popt[0]*1e12
@@ -149,43 +154,6 @@ def countFilef():
     print('File count:', countFile)
     return countFile
 
-clear_all()
-
-R=196*1e3;
-float_elec= int(input("measurement config: [0: RC series, 1: float] \t" ))
-if float_elec == 0:
-    print("RC series CONFIGURATION")
-elif float_elec == 1:
-    print("FLOAT CONFIGURATION")
-else:
-    print("NO configuration")
-    sys.exit(1)
-    
-plotFlag = int(input("Plot graphs? [0: NO, 1: YES (it will take a few minutes)] \t"))
-if plotFlag == 0:
-    print("NO PLOT")
-elif plotFlag == 1:
-    print("PLOTTING...")
-else:
-    print("Command not found")
-    sys.exit(1)
-
-root = tk.Tk()
-# root.lift()
-# root.wm_attributes('-topmost', 1)
-root.withdraw()
-file_path = filedialog.askopenfilename()
-
-matrixList = sorted(os.listdir(os.path.dirname(file_path)))
-
-if file_path.split('.')[1] == "csv":
-    matrixList.pop() # delete last file (config)
-
-last_matrixList = matrixList[-1]
-row = int(last_matrixList.split("x")[0])
-column = int(last_matrixList.split("x")[1].split(".")[0])
-matrix = np.zeros(row*column)
-
 def checkMeasType():
     try:
         if file_path.split('.')[1] == "mat":
@@ -210,55 +178,154 @@ def readJSON(filepath):
     with open(config_file, "r") as read_content:
         return json.load(read_content)
 
-if __name__ == '__main__':
-    measType = checkMeasType()
-    for file in range(countFilef()):   
-        if file_path:
-            if file_path.split('.')[1] == "mat":
-                mat = scipy.io.loadmat(os.path.dirname(file_path) + "/" + matrixList[file])
-                f0 = mat['param']['f0'][0][0][0][0]
-                fS = mat['param']['fS'][0][0][0][0]
-                Ns = mat['param']['Ns'][0][0][0][0]
-                Nharm = mat['param']['Nharm'][0][0][0][0]
-                # measType = mat['param']['measType'][0][0][0][0]
-                VR=mat['signals']['VR'][0][0]
-                Vin=mat['signals']['Vin'][0][0]
-                CH1 = mat['signals']['CH1'][0][0]
-                CH2 = mat['signals']['CH2'][0][0]
-                Zcoil = mat['results']['Zcoil'][0][0]
-                Ccoil = mat['results']['Lcoil'][0][0][0]
-<<<<<<< HEAD
-                
-            elif file_path.split('.')[1] == "csv": # BISOGNA AGGIUNGERE UNA FUNZ ITERATIVA
-                df = pd.read_csv(os.path.dirname(file_path) + "/" + matrixList[file])
-=======
-            elif file_path.split('.')[1] == "csv":
-                df = readCSV(file_path)
->>>>>>> 2907a4817cd740399dccf779cd7d66211be449b0
-                CH1 = df.Ch1
-                CH2 = df.Ch2
-                config = readJSON(file_path)
-                f0 = config['f0']
-                fS = config['fS']
-                Ns = config['Ns']
-                Nharm = config['Nharm']
+float_elec= int(input("measurement config: [0: RC series, 1: float] \t" ))
+if float_elec == 0:
+    print("RC series CONFIGURATION")
+elif float_elec == 1:
+    print("FLOAT CONFIGURATION")
+else:
+    print("NO configuration")
+    sys.exit(1)
+    
+plotFlag = int(input("Plot graphs? [0: NO, 1: YES (it will take a few minutes)] \t"))
+if plotFlag == 0:
+    print("NO PLOT")
+elif plotFlag == 1:
+    print("PLOTTING...")
+else:
+    print("Command not found")
+    sys.exit(1)
 
-<<<<<<< HEAD
-            Ns_cycle=int(fS/f0)
-            Ncycles=int(Ns/Ns_cycle)
-=======
-            Ns_cycle=fS/f0
-            Ncycles=Ns/Ns_cycle
->>>>>>> 2907a4817cd740399dccf779cd7d66211be449b0
+def selectFiles():
+    global file_path, matrixList
+    global matrix_C, matrix_R, column, row
+    root = tk.Tk()
+    # root.lift()
+    # root.wm_attributes('-topmost', 1)
+    root.withdraw()
+    file_path = filedialog.askopenfilename()
+    matrixList = sorted(os.listdir(os.path.dirname(file_path)))
+    if file_path.split('.')[1] == "csv":
+        matrixList.pop() # delete last file (config)
+    last_matrixList = matrixList[-1]
+    row = int(last_matrixList.split("x")[0])
+    column = int(last_matrixList.split("x")[1].split(".")[0])
+    matrix_C = np.zeros(row*column)
+    matrix_R = np.zeros(row*column)
+
+def loadParameters():
+    global f0, fS, Ns, Nharm, VR, Vin, CH1, CH2, Zcoil, Ccoil
+    global len_time_lockin, time_lockin, Ns_cycle, Ncycles, delay
+    if file_path:
+        if file_path.split('.')[1] == "mat":
+            mat = scipy.io.loadmat(os.path.dirname(file_path) + "/" + matrixList[file])
             
-            # Time axis
-            t = np.arange(Ns-1)/fS # Time vector
-            delay = 0
-            time_lockin = np.arange(Ns_cycle*(Ncycles-1))/fS # Time vector
-            len_time_lockin = len(time_lockin)
-        else:
-            print("no file")
-            sys.exit(1)
+            f0 = mat['param']['f0'][0][0][0][0]
+            fS = mat['param']['fS'][0][0][0][0]
+            Ns = mat['param']['Ns'][0][0][0][0]
+            Nharm = mat['param']['Nharm'][0][0][0][0]
+            VR=mat['signals']['VR'][0][0]
+            Vin=mat['signals']['Vin'][0][0]
+            CH1 = mat['signals']['CH1'][0][0]
+            CH2 = mat['signals']['CH2'][0][0]
+            Zcoil = mat['results']['Zcoil'][0][0]
+            Ccoil = mat['results']['Lcoil'][0][0][0]
+            
+        elif file_path.split('.')[1] == "csv":
+            df = pd.read_csv(os.path.dirname(file_path) + "/" + matrixList[file])
+            CH1 = df.Ch1
+            CH2 = df.Ch2
+            config = readJSON(file_path)
+            f0 = config['f0']
+            fS = config['fS']
+            Ns = config['Ns']
+            Nharm = config['Nharm']
+
+        Ns_cycle=int(fS/f0)
+        Ncycles=int(Ns/Ns_cycle)
+        
+        # Time axis
+        t = np.arange(Ns-1)/fS # Time vector
+        delay = 0
+        time_lockin = np.arange(Ns_cycle*(Ncycles-1))/fS # Time vector
+        len_time_lockin = len(time_lockin)
+    else:
+        print("no file")
+        sys.exit(1)
+        
+def plotFun():
+    plt.figure()
+    plt.title("Vin")
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
+    plt.plot(CH2)
+    
+    plt.figure()
+    plt.title("VR")
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
+    plt.plot(CH1)
+    
+    # plt.figure()
+    # plt.title("VC")
+    # plt.ylabel('Amplitude [V]')
+    # plt.xlabel('samples')
+    # plt.plot(VC)
+    
+    # plt.figure()
+    # plt.title("Lock-in output Real part")
+    # plt.plot(freq, Vin_lockin.real, label = 'Vin')
+    # plt.plot(freq, VR_lockin.real, label='VR')
+    # plt.ylabel('Real part value')
+    # plt.xlabel('Frequency [Hz]')
+    # plt.legend()
+    
+    # plt.figure()
+    # plt.title("Lock-in output Imag part")
+    # plt.plot(freq, Vin_lockin.imag, label = 'Vin')
+    # plt.plot(freq, VR_lockin.imag, label = 'VR')
+    # plt.ylabel('Real part value')
+    # plt.xlabel('Frequency [Hz]')
+    # plt.legend()
+      
+    plt.figure()
+    plt.title("Signals Filtered")
+    plt.plot(VRf, label = 'VRf')
+    plt.plot(Vin_f, label = 'Vin_f')
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
+    plt.legend()
+    
+    plt.figure()
+    plt.title("Signals Filtered")
+    plt.plot(CH1f.transpose(), label = 'CH1f')
+    plt.plot(CH2f.transpose(), label = 'CH2f')
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
+    plt.legend()
+    
+    plt.figure()
+    plt.title("Zoom of Signals Filtered")
+    plt.plot(CH1.transpose(), label = 'CH1')
+    plt.plot(CH1f.transpose(), label = 'CH1f')
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
+    plt.xlim([0,200])
+    plt.legend()
+    
+    plt.figure()
+    plt.title("abs value of Phasor signal Filtered")
+    plt.plot(freq, abs(phasorVin), label = 'phasorVin')
+    plt.plot(freq, abs(phasorVR), label = 'phasorVR')
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('Frequency [Hz]')
+    plt.legend()
+
+if __name__ == '__main__':
+    selectFiles()
+    measType = checkMeasType()
+    for file in range(countFilef()):
+        loadParameters()
             
         s_harml = np.zeros([Nharm,len_time_lockin])
         # s_harml=np.empty((Nharm,Ns_cycle*(Ncycles-1)),'float')
@@ -301,84 +368,19 @@ if __name__ == '__main__':
             phasorVR = np.dot(lock_in, VRf)
                         
             if plotFlag == 1:
-                plt.figure()
-                plt.title("Vin")
-                plt.ylabel('Amplitude [V]')
-                plt.xlabel('samples')
-                plt.plot(CH2)
-            
-                plt.figure()
-                plt.title("VR")
-                plt.ylabel('Amplitude [V]')
-                plt.xlabel('samples')
-                plt.plot(CH1)
-            
-                # plt.figure()
-                # plt.title("VC")
-                # plt.ylabel('Amplitude [V]')
-                # plt.xlabel('samples')
-                # plt.plot(VC)
+                plotFun()
                 
-                # plt.figure()
-                # plt.title("Lock-in output Real part")
-                # plt.plot(freq, Vin_lockin.real, label = 'Vin')
-                # plt.plot(freq, VR_lockin.real, label='VR')
-                # plt.ylabel('Real part value')
-                # plt.xlabel('Frequency [Hz]')
-                # plt.legend()
-            
-                # plt.figure()
-                # plt.title("Lock-in output Imag part")
-                # plt.plot(freq, Vin_lockin.imag, label = 'Vin')
-                # plt.plot(freq, VR_lockin.imag, label = 'VR')
-                # plt.ylabel('Real part value')
-                # plt.xlabel('Frequency [Hz]')
-                # plt.legend()
-                  
-                plt.figure()
-                plt.title("Signals Filtered")
-                plt.plot(VRf, label = 'VRf')
-                plt.plot(Vin_f, label = 'Vin_f')
-                plt.ylabel('Amplitude [V]')
-                plt.xlabel('samples')
-                plt.legend()
-            
-                plt.figure()
-                plt.title("Signals Filtered")
-                plt.plot(CH1f.transpose(), label = 'CH1f')
-                plt.plot(CH2f.transpose(), label = 'CH2f')
-                plt.ylabel('Amplitude [V]')
-                plt.xlabel('samples')
-                plt.legend()
-            
-                plt.figure()
-                plt.title("Zoom of Signals Filtered")
-                plt.plot(CH1.transpose(), label = 'CH1')
-                plt.plot(CH1f.transpose(), label = 'CH1f')
-                plt.ylabel('Amplitude [V]')
-                plt.xlabel('samples')
-                plt.xlim([0,200])
-                plt.legend()
-
-                plt.figure()
-                plt.title("abs value of Phasor signal Filtered")
-                plt.plot(freq, abs(phasorVin), label = 'phasorVin')
-                plt.plot(freq, abs(phasorVR), label = 'phasorVR')
-                plt.ylabel('Amplitude [V]')
-                plt.xlabel('Frequency [Hz]')
-                plt.legend()
-            
-            matrix[file] =  funPhasor(float_elec, plotFlag)
+            matrix_C[file] =  funPhasor(float_elec, plotFlag)
 
         else:
             print("measType is not defined")
     
-    matrix = matrix.reshape(column, row)
+    matrix_C = matrix_C.reshape(column, row)
     # print(matrix)
     plt.figure()
     # ref: https://docs.python.org/3/library/os.path.html#os.path.normpath
     plt.title("Scan results for C, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
-    plt.imshow(matrix)
+    plt.imshow(matrix_C)
     lbl = plt.colorbar(pad = 0.15)
     lbl.set_label('[pF]', rotation=270, labelpad=15) 
     print(" ### --- END --- ###")

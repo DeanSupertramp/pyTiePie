@@ -113,40 +113,43 @@ This is a list of things you need for use the software and how to install them.
     ```
     more information [here](https://www.tiepie.com/en/libtiepie-sdk/python).
 
-4. Install packages:
-  * Pandas
+4. Install packages manually:
+    * Pandas
+      ```sh
+      pip install pandas
+      ```
+      or
+      ```sh
+      conda install pandas
+      ```
+    * Numpy [reference here](https://numpy.org/install/)
+      ```sh
+      pip install numpy
+      ```
+      or
+      ```sh
+      conda install numpy
+      ```
+    * Scipy [reference here](https://scipy.org/install/)
+      ```sh
+      pip install scipy
+      ```
+    * Matplotlib [reference here](https://matplotlib.org/stable/users/installing/index.html)
+      ```sh
+      pip install matplotlib
+      ```
+    * GitPython [reference here](https://gitpython.readthedocs.io/en/stable/)
+      ```sh
+      pip install gitpython
+      ```
+    * PyUsb [reference here](https://pypi.org/project/pyusb/)
+      ```sh
+      pip install pyusb
+      ```
+5. ...or you can use the requirements file:
     ```sh
-    pip install pandas
+    pip3 install -r requirements.txt
     ```
-    or
-    ```sh
-    conda install pandas
-    ```
-  * Numpy [reference here](https://numpy.org/install/)
-    ```sh
-    pip install numpy
-    ```
-    or
-    ```sh
-    conda install numpy
-    ```
-  * Scipy [reference here](https://scipy.org/install/)
-    ```sh
-    pip install scipy
-    ```
-  * Matplotlib [reference here](https://matplotlib.org/stable/users/installing/index.html)
-    ```sh
-    pip install matplotlib
-    ```
-  * GitPython [reference here](https://gitpython.readthedocs.io/en/stable/)
-    ```sh
-    pip install gitpython
-    ```
-  * PyUsb [reference here](https://pypi.org/project/pyusb/)
-    ```sh
-    pip install pyusb
-    ```
-    https://pypi.org/project/pyusb/
 
 ### Installation
 1. Clone the repo

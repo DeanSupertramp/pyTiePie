@@ -1,0 +1,7 @@
+python-libtiepie
+pandas
+numpy
+scipy
+matplotlib
+gitpython
+pyusb
