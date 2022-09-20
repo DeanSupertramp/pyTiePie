@@ -1,9 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
-
 import logSpice2Matrix as S2M
 from init import * # analysis:ignore
-
 from quantization import quantization
 from RC_series import voltageDifference, voltageDifference_CICLO, voltageDifference_fasore, signal_out
 from Bridge import W_Bridge, get_dC, signal_out_bridge
@@ -14,7 +12,6 @@ def ciclo():
         for j in range(1,nstep+1):
             C_value[i-1]=C*i;                           # da 1pF a 10pF
             dC_value[i-1,j-1] = C_value[i-1]/(j*dCstep)    # da C/100 a C/1000
-
 
 def surface_plot (matrix, **kwargs):
     # x cols, y rows
@@ -34,8 +31,6 @@ def surface_plot (matrix, **kwargs):
     plt.imshow(abs(diff_mc_w_out)[:,:,0])
     lbl = plt.colorbar()
     lbl.set_label('[v]', rotation=270, labelpad=15)      
-
-
 
 def plotGraph():
     plt.figure()
@@ -82,8 +77,6 @@ def plotGraph():
                extent=[1/dCstep, 1/(dCstep*nstep), nstep, 1],
                aspect='auto')
     plt.colorbar()
-    
-
 
 if __name__ == '__main__':
     o = voltageDifference()
@@ -97,9 +90,7 @@ if __name__ == '__main__':
     print("Mean Square Error Spice vs. Theorical Simulation: " + str(mse))
     
     quantization()
-
     plotGraph()
-        
     diff_mc_out, diff_mc_w_out = voltageDifference_fasore()
 
     (fig_s, ax, surf) = surface_plot(abs(diff_mc_w_out), cmap=plt.cm.coolwarm)
@@ -110,7 +101,6 @@ if __name__ == '__main__':
     plt.show()
     
     signal_out()
-        
     # Vab = W_Bridge()
     # get_dC(Vab, C_value[0])
     signal_out_bridge()

@@ -2,23 +2,26 @@ from __future__ import print_function
 import time
 import os
 import sys
-import libtiepie
-from libtiepie.const import SIGNAL_TYPES, STM_AMPLITUDE, STM_OFFSET
-from libtiepie.const import ST_UNKNOWN, ST_SINE, ST_TRIANGLE, ST_SQUARE, ST_DC, ST_NOISE, ST_ARBITRARY, ST_PULSE
 import numpy as np
 from matplotlib import pyplot as plt
 from array import array
-import Z_meter
 import argparse
-from MyArgParser import MyArgParser
 import json
+# import threading as th
+
 import git # gitpython
+import libtiepie
+from libtiepie.const import SIGNAL_TYPES, STM_AMPLITUDE, STM_OFFSET
+from libtiepie.const import ST_UNKNOWN, ST_SINE, ST_TRIANGLE, ST_SQUARE, ST_DC, ST_NOISE, ST_ARBITRARY, ST_PULSE
+
+from MyArgParser import MyArgParser
+import Z_meter
 
 f = 1000.0
 a = 1.0
 Nsamples = 1000
 measType = 1
-f0=4e3              #freq. fondamentale
+# f0=4e3              #freq. fondamentale
 Nharm=50            # n° armoniche
 Tsignal=2           # in [ms]
 path = ""
@@ -30,19 +33,6 @@ signal_dict = {"UNKNOWN" : libtiepie.ST_UNKNOWN,        # 0
                "DC" : libtiepie.ST_DC,                  # 8
                "NOISE" : libtiepie.ST_NOISE,            # 16
                "ARBITRARY" : libtiepie.ST_ARBITRARY}    # 32
-
-# Commands configuration
-tiepie_setSignal = MyArgParser("set", description = "select signal") # check in libtiepie.const
-tiepie_setSignal.add_argument("signal", type=str, help='Signal Type')
-tiepie_setSignal.add_argument("ampl", nargs='?', default = 1.0, type=float, help='Amplitude')
-tiepie_setSignal.add_argument("freq", nargs='?', default = 100, type=float, help='Frequency')
-tiepie_setSignal.add_argument("offset", nargs='?', default = 0, type=float, help='Offset')
-tiepie_setSignal.add_argument("config", nargs='?', default = "Series", type=str, help='Config Measurement') 
-
-tiepie_setDC = MyArgParser("setDC", description = "set DC") # check in libtiepie.const
-tiepie_setDC.add_argument("offsetDC", type=float, help='offset') 
-tiepie_setDC.add_argument("signalDC", nargs='?', default = "DC", type=str, help='DC label')
-tiepie_setDC.add_argument("configDC", nargs='?', default = "Series", type=str, help='ConfigDC Measurement') 
 
 def command(args):
     global k2v
@@ -120,11 +110,6 @@ def command(args):
     else:
         print("configuration measurement not found!")
         sys.exit(1)
-        
-# Add all commands to an instruction set dictionary
-commands = {}
-commands['set'] = {'parser': tiepie_setSignal ,'execution': command}
-commands['setDC'] = {'parser': tiepie_setDC ,'execution': command}
                    
 def gen_settings():
     # ********** Generator settings: **********
@@ -133,7 +118,7 @@ def gen_settings():
         gen.signal_type = k2v
         # see const.py for signal definitions and types
         if SIGNAL_TYPES[k2v].upper() == "ARBITRARY":
-            # segnale, lock_in, params = Z_meter.Z_meter_excitation(a,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
+            segnale, lock_in, params = Z_meter.Z_meter_excitation(a,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
             # Select frequency mode:
             gen.frequency_mode = libtiepie.FM_SAMPLEFREQUENCY
             # Set sample frequency:
@@ -165,6 +150,7 @@ def gen_settings():
             # Enable output:
             gen.output_on = True
             gen.mode = libtiepie.GM_CONTINUOUS
+            # gen.mode = libtiepie.GM_BURST_COUNT
         elif SIGNAL_TYPES[k2v].upper() == "DC":
             # Set offset:
             gen.offset = o  # 0 V
@@ -180,6 +166,24 @@ def gen_settings():
 # gen.signal_types restituisce maschera in bit dei segnali
 # from libtiepie.utils import signal_type_str # funzione builtin in libtiepie.utils
 # print('  Signal types              : ' + signal_type_str(gen.signal_types))
+
+# Commands configuration
+tiepie_setSignal = MyArgParser("set", description = "select signal") # check in libtiepie.const
+tiepie_setSignal.add_argument("signal", type=str, help='Signal Type')
+tiepie_setSignal.add_argument("ampl", nargs='?', default = 1.0, type=float, help='Amplitude')
+tiepie_setSignal.add_argument("freq", nargs='?', default = 100, type=float, help='Frequency')
+tiepie_setSignal.add_argument("offset", nargs='?', default = 0, type=float, help='Offset')
+tiepie_setSignal.add_argument("config", nargs='?', default = "Series", type=str, help='Config Measurement') 
+
+tiepie_setDC = MyArgParser("setDC", description = "set DC") # check in libtiepie.const
+tiepie_setDC.add_argument("offsetDC", type=float, help='offset') 
+tiepie_setDC.add_argument("signalDC", nargs='?', default = "DC", type=str, help='DC label')
+tiepie_setDC.add_argument("configDC", nargs='?', default = "Series", type=str, help='ConfigDC Measurement') 
+
+# Add all commands to an instruction set dictionary
+commands = {}
+commands['set'] = {'parser': tiepie_setSignal ,'execution': command}
+commands['setDC'] = {'parser': tiepie_setDC ,'execution': command}
 
 # Parse a line and in case execute a command
 def process(line):
@@ -225,7 +229,6 @@ def tiepieList():
         print('No devices found!')
         
 def tiepieInit():
-    # Print library info:
     # print_library_info()
     # Try to open an oscilloscope with block measurement support and a generator in the same device:
     global scp, gen
@@ -284,52 +287,95 @@ def osc_settings():
          # ch.couplings                                  # 3 Opzioni CK_DCV (1), CK_ACV (2) . NON supporta invece CK_ACA (8), CK_DCA (4), CK_OHM (16) e CK_UNKNOWN (0)
          ch.coupling = libtiepie.CK_DCV                  # DC Volt
      # Set trigger timeout:
-     scp.trigger_time_out = 1  # 1 s
+     scp.trigger_time_out = 10  # 1 s
      # Disable all channel trigger sources:
      for ch in scp.channels:
          ch.trigger.enabled = False
-     # Locate trigger input:
-     trigger_input = scp.trigger_inputs.get_by_id(libtiepie.TIID_GENERATOR_START)  # or TIID_GENERATOR_NEW_PERIOD or TIID_GENERATOR_STOP
-     if trigger_input is None:
+
+     trigger_input_scp = scp.trigger_inputs.get_by_id(libtiepie.TIID_GENERATOR_START)  # or TIID_GENERATOR_NEW_PERIOD or TIID_GENERATOR_STOP
+     # trigger_input_scp = scp.trigger_inputs.get_by_id(libtiepie.TIID_GENERATOR_NEW_PERIOD)  # or TIID_GENERATOR_NEW_PERIOD or TIID_GENERATOR_STOP
+     if trigger_input_scp is None:
          raise Exception('Unknown trigger input!')
          return False
      # Enable trigger input:
+     trigger_input_scp.enabled = True
+     # Locate trigger input:
+     trigger_input = gen.trigger_inputs.get_by_id(libtiepie.TIID_EXT1)
+     if trigger_input is None:
+         trigger_input = gen.trigger_inputs.get_by_id(libtiepie.TIID_EXT2)
      trigger_input.enabled = True
-    # Print oscilloscope info:
-    # print_device_info(scp)
      return True
 
+# def acquire_data(i, k, path, move):
+#     #if signalType == "ARBITRARY":
+#     dataSUM = [0]*Nsamples
+#     for j in range(10):
+#         # Start measurement:
+#         scp.start()
+#         # Start signal generation:
+#         gen.start()
+#         # Wait for measurement to complete:
+#         while not scp.is_data_ready:
+#             time.sleep(0.01)  # 10 ms delay, to save CPU time
+#         # Stop generator:
+#         gen.stop()
+#         # Get data:
+#         dataOUT = scp.get_data()
+#         # y[0,:]=dataOUT[0]
+#         # y[1,:]=dataOUT[1]
+#         if j > 1: # scarto i primi valori
+#             dataSUM = np.add(dataSUM, dataOUT)        
+#         # PLOT
+#         plt.plot(np.arange(0,np.size(dataOUT,1),1),np.transpose(dataOUT))
+#         time.sleep(.1)
+#         plt.show()
+#         time.sleep(.1)
+#         print(j)
+#         if j <9:
+#             plt.cla() # Clear current axes
+#     dataMEAN = dataSUM/8
+#     saveCSV(i, k, list(dataMEAN), path, move)
+#     # Disable output:
+#     gen.output_on = False
+    
 def acquire_data(i, k, path, move):
-    #if signalType == "ARBITRARY":
-    dataSUM = [0]*Nsamples
-    for j in range(10):
-        # Start measurement:
+    # Start measurement:
+    scp.start()
+    gen.start()
+    while not scp.is_data_ready:
+        time.sleep(0.001)  # 10 ms delay, to save CPU time
+        print("wait")
+    # Start signal generation:
+    # time.sleep(0.01)
+    gen.stop()
+    # Get data:
+    dataOUT = scp.get_data()
+    # saveCSV(i, k, list(dataOUT), path, move)
+    saveNPY(i, k, dataOUT, path, move)
+    start = time.time()
+    while time.time() - start < 30.0:
+        i = i+1
         scp.start()
-        # Start signal generation:
         gen.start()
-        # Wait for measurement to complete:
         while not scp.is_data_ready:
-            time.sleep(0.01)  # 10 ms delay, to save CPU time
-        # Stop generator:
+            time.sleep(0.001)  # 10 ms delay, to save CPU time
+            print("wait")
         gen.stop()
         # Get data:
         dataOUT = scp.get_data()
-        # y[0,:]=dataOUT[0]
-        # y[1,:]=dataOUT[1]
-        if j > 1: # scarto i primi valori
-            dataSUM = np.add(dataSUM, dataOUT)        
-        # PLOT
-        plt.plot(np.arange(0,np.size(dataOUT,1),1),np.transpose(dataOUT))
-        time.sleep(.1)
-        plt.show()
-        time.sleep(.1)
-        print(j)
-        if j <9:
-            plt.cla() # Clear current axes
-    dataMEAN = dataSUM/8
-    saveCSV(i, k, list(dataMEAN), path, move)
-    # Disable output:
+        saveNPY(i, k, dataOUT, path, move)
+        # saveCSV(i, k, list(dataOUT), path, move)
+
     gen.output_on = False
+    
+def saveNPY(i, k, dataOUT, path, move):
+    dataOUT = np.array(dataOUT)
+    name = setName(i, k)
+    # Output CSV data:
+    # filepath = path + "/" + str(j) + ".csv"
+    filepath = path + "/" + name + ".npy"
+    np.save(filepath, dataOUT)
+    print('Data written to: ' + filepath)
 
 def createDir():
     # cur_path = os.path.dirname(os.getcwd())
@@ -377,7 +423,7 @@ def saveJSON(path, ampl, f_0):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 def setName(i, j):
-    return str("{:02d}".format(i)) + "x" + str("{:02d}".format(j))
+    return str("{:04d}".format(i)) + "x" + str("{:04d}".format(j))
 
 # Search for devices:
 libtiepie.device_list.update()
@@ -392,6 +438,21 @@ else:
 
 segnale, lock_in, params = Z_meter.Z_meter_excitation(a,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
 
+move = ""
+
+# sweepMode = 0
+# def key_capture_thread():
+#     global sweepMode, move
+#     move = input("(th) r=right acquire, d=down aquire, c=close\n")
+#     if move == "d":
+#         sweepMode = 0
+
+# def do_stuff():
+#     global i, j, move, sweepMode
+#     th.Thread(target=key_capture_thread, args=(), name='key_capture_thread', daemon=True).start()
+#     while sweepMode:
+#         print('still going...')
+        
 def main():
     global a, f, segnale, Nsamples
     global scp, gen
@@ -404,23 +465,30 @@ def main():
             while True:
                 try:
                     if osc_settings() and gen_settings():
-                            move = input("r=right acquire, d=down aquire, c=close\n")
-                            if move == "r":
-                                i = i + 1
-                                acquire_data(i, j, path, move)
-                            elif move == "d":
-                                i = 1
-                                j = j + 1
-                                acquire_data(i, j, path, move)
-                            elif move == "c":
-                                print("close")
-                                # Close oscilloscope:
-                                del scp
-                                # Close generator:
-                                del gen
-                                sys.exit(0)
+                        move = input("r=right acquire, d=down aquire, c=close\n")
+                        if move == "r":
+                            i = i + 1
+                            acquire_data(i, j, path, move)
+                        elif move == "d":
+                            i = 1
+                            j = j + 1
+                            acquire_data(i, j, path, move)
+                        elif move == "c":
+                            print("close")
+                            # Close oscilloscope:
+                            del scp
+                            # Close generator:
+                            del gen
+                            sys.exit(0)
+                        else:
+                            print("mode not valid")
                 except Exception as e:
                     print('Exception: ', e)
+                    # Close oscilloscope:
+                    del scp
+                    # Close generator:
+                    del gen
+                    time.sleep(0.01)
                     sys.exit(1)    
         else:
             print('No oscilloscope available with block measurement support or generator available in the same unit!')

@@ -8,14 +8,12 @@ Created on Mon Jul 11 10:23:32 2022
 
 import numpy as np
 import matplotlib.pyplot as plt
-
 from init import *
 
 def voltageDifference():
     V1_num = w * R * (C + dC);
     V1_den = np.sqrt(1 + pow(w,2) * pow(R,2) * pow(C+dC,2));
     V1 = Vin * V1_num / V1_den;
-
     V2_num = w * R * C;
     V2_den = np.sqrt(1 + pow(w,2) * pow(R,2) * pow(C,2));
     V2 = Vin * V2_num /V2_den;
@@ -25,7 +23,6 @@ def voltageDifference():
     print("V1 - V2 = " + str(diff) + " V")
     out = {'V1_num':V1_num, 'V1_den':V1_den, 'V1':V1, 'V2_num':V2_num, 'V2_den':V2_den, 'V2':V2, 'diff':diff}
     return out
-
 
 def voltageDifference_CICLO():
     for i in range(nstep):
@@ -38,7 +35,6 @@ def voltageDifference_CICLO():
             V2_m[i] = Vin * V2_num_m[i] /V2_den_m[i];
             diff_m[i,j] = (V1_m[i,j]-V2_m[i]);
 
-
 def voltageDifference_fasore():
     for i in range(nstep):
         for j in range(nstep):
@@ -49,7 +45,6 @@ def voltageDifference_fasore():
             V2_den_mc[i] = - 1j + w * R * C_value[i]
             V2_mc[i] = Vin * V2_num_mc[i] /V2_den_mc[i]
             diff_mc[i,j] = (V1_mc[i,j]-V2_mc[i])
-            
     for i in range(nstep):
         for j in range(nstep):
             for k in range(len(w_vec)):
@@ -61,7 +56,7 @@ def voltageDifference_fasore():
                 V2_mc_w[i, k] = Vin * V2_num_mc_w[i, k] /V2_den_mc_w[i, k]
                 diff_mc_w[i,j, k] = (V1_mc_w[i,j, k]-V2_mc_w[i, k])
     
-# module of the voltage difference
+    # module of the voltage difference
     plt.figure()
     plt.title("Module of the voltage difference - [abs(diff)]")
     plt.ylabel('Cap Value [pF]')
@@ -82,7 +77,7 @@ def voltageDifference_fasore():
     lbl = plt.colorbar()
     lbl.set_label('[phase]', rotation=270, labelpad=15)
     
-# Difference of voltage modules    
+    # Difference of voltage modules    
     plt.figure()
     plt.title("Difference of voltage modules - abs(V1) - abs(V2)")
     plt.ylabel('Cap Value [pF]')
@@ -93,7 +88,7 @@ def voltageDifference_fasore():
     lbl = plt.colorbar()
     lbl.set_label('[v]', rotation=270, labelpad=15)
     
-# Voltage Difference vs. freq. with several C
+    # Voltage Difference vs. freq. with several C
     plt.figure()
     plt.title("Voltage Difference vs. freq. with several C")
     plt.ylabel('Voltage Difference [V]')
@@ -105,7 +100,6 @@ def voltageDifference_fasore():
     max_value = max(abs(diff_mc_w)[0,0,:])
     max_index = np.where(abs(diff_mc_w[0,0,:]) == max_value)
     print('Max value is ', max_value, 'at ', f_vec[max_index], 'Hz')
-    
     
     # Voltage Difference vs. freq.
     plt.figure()
@@ -121,7 +115,6 @@ def voltageDifference_fasore():
 def signal_out():
     S1_mc= abs(V1_mc[0,0]) * np.cos(w*t[:period+1] + np.angle(V1_mc[0,0]))
     S2_mc= abs(V2_mc[0]) * np.cos(w*t[:period+1] + np.angle(V2_mc[0]))
-       
     # NOISE
     noise = np.random.uniform(-.2, .2, S1_mc.shape)
     S1_noised = S1_mc + noise
@@ -219,4 +212,3 @@ def signal_out():
     plt.plot(t[:period+1], DS_noise[:period+1] - DS[:period+1], label='DS + noise (error)')
     plt.subplots_adjust(hspace = 0.8)
     plt.legend()
-    

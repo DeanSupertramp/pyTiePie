@@ -9,7 +9,6 @@ from init import *
 import numpy as np
 from matplotlib import pyplot as plt
 
-
 def quantization():             
 # https://en.wikipedia.org/wiki/Quantization_(signal_processing)
 # https://github.com/GuitarsAI/ADSP_Tutorials/blob/master/ADSP_01_Quantization.ipynb    
@@ -27,7 +26,6 @@ def quantization():
     quant_error_tread = sinewave_quant_tread_rec - sinewave
     quant_error_rise = sinewave_quant_rise_rec - sinewave
 
-    
     # NOISE
     noise = np.random.uniform(-.2, .2, sinewave.shape)
     sinewave_noised = sinewave + noise
@@ -107,4 +105,3 @@ def quantization():
     plt.xlabel('Time [s]')
     plt.ylabel('Amplitude')
     plt.legend()
-    

@@ -36,9 +36,6 @@ XC = 0
 def modelCR(x, p0, p1, p2, p3, p4, p5, p6):
     return p0+p1*x+p2*x**2+p3*x**3+p4*x**4+p5*x**5+p6*x**6 # poly
     #return p0 - p1 * p2**x
-    
-# def modelCR(x, p1, p2, p3, p4):
-#     return p1+(p2-p1)/(1+(x/p3)**p4)
 
 def modelCX_float(x, p1, p2):
     return p2+p1/np.sqrt(x)
@@ -55,6 +52,9 @@ def funPhasor(float_elec, plotFlag):
         XC = -ZC.imag
         Cestimated = 1/(2*np.pi*freq*np.squeeze(XC))*1e12
         Cestimated_mean = np.mean(Cestimated[0:40]) #ad alte freq la cap varia molto
+        # Cestimated_mean = Cestimated[0] #ad alte freq la cap varia molto
+        RCestimated_mean = np.mean(RC[0:40]) #ad alte freq la cap varia molto
+        # RCestimated_mean = RC[0] #ad alte freq la cap varia molto
         # print("Cestimated_mean: ",Cestimated_mean, "pF")
     elif float_elec == 1:
         phasorVC = phasorVR
@@ -63,6 +63,9 @@ def funPhasor(float_elec, plotFlag):
         XC = ZC.imag
         Cestimated = 1/(2*np.pi*freq*np.squeeze(XC))*1e12
         Cestimated_mean = np.mean(Cestimated[0:40]) #ad alte freq la cap varia molto
+        # Cestimated_mean = Cestimated[0] #ad alte freq la cap varia molto
+        RCestimated_mean = np.mean(RC[0:40]) #ad alte freq la cap varia molto
+        # RCestimated_mean = RC[0] #ad alte freq la cap varia molto
         # print("Cestimated_mean: ", Cestimated_mean, "pF")
     else:
         print("invalid")
@@ -72,6 +75,13 @@ def funPhasor(float_elec, plotFlag):
     # print("C estimated from fitting: ", Cestimated2, "pF")
     popt2, pcov2 = curve_fit(modelCR, freq, np.squeeze(RC))
     # print("R estimated from fitting: ", popt2, "ohm")
+    
+    abs_phasorVC_mean = np.mean(abs(phasorVC))
+    angle_phasorVC_mean  = np.mean(np.angle(phasorVC))
+    
+    abs_slope = np.polyfit(freq, abs(ZC),1)[0]
+    angle_slope = np.polyfit(freq, np.angle(ZC),1)[0]
+    
     if plotFlag == 1:
         plt.figure()
         plt.subplot(2,2,1)
@@ -141,7 +151,7 @@ def funPhasor(float_elec, plotFlag):
         plt.plot(freq, RC, label = "RC")
         plt.plot(freq, modelCR(freq, *popt2), label = "RC fitted")
         plt.legend()
-    return Cestimated_mean
+    return Cestimated_mean, RCestimated_mean, abs_phasorVC_mean, angle_phasorVC_mean, abs_slope, angle_slope
 
 def countFilef():
     countFile = 0
@@ -149,7 +159,7 @@ def countFilef():
     # check if current path is a file
         if os.path.isfile(os.path.join(os.path.dirname(file_path), path)):
             countFile += 1
-    if file_path.split('.')[1] == "csv":
+    if file_path.split('.')[1] == "csv" or file_path.split('.')[1] == "npy":
         countFile -= 1
     print('File count:', countFile)
     return countFile
@@ -159,7 +169,7 @@ def checkMeasType():
         if file_path.split('.')[1] == "mat":
             mat = scipy.io.loadmat(file_path)
             measType = mat['param']['measType'][0][0][0][0]
-        elif file_path.split('.')[1] == "csv":
+        elif file_path.split('.')[1] == "csv" or file_path.split('.')[1] == "npy":
             config = readJSON(file_path)
             measType = config['measType']
         if measType == 0:
@@ -198,28 +208,34 @@ else:
 
 def selectFiles():
     global file_path, matrixList
-    global matrix_C, matrix_R, column, row
+    global matrix_C, matrix_R, matrix_abs_phasorVC_mean, matrix_angle_phasorVC_mean
+    global matrix_abs_slope, matrix_angle_slope
+    global column, row
     root = tk.Tk()
     # root.lift()
     # root.wm_attributes('-topmost', 1)
     root.withdraw()
     file_path = filedialog.askopenfilename()
     matrixList = sorted(os.listdir(os.path.dirname(file_path)))
-    if file_path.split('.')[1] == "csv":
+    if file_path.split('.')[1] == "csv" or file_path.split('.')[1] == "npy":                            
         matrixList.pop() # delete last file (config)
     last_matrixList = matrixList[-1]
     row = int(last_matrixList.split("x")[0])
     column = int(last_matrixList.split("x")[1].split(".")[0])
     matrix_C = np.zeros(row*column)
     matrix_R = np.zeros(row*column)
+    matrix_abs_phasorVC_mean = np.zeros(row*column)
+    matrix_angle_phasorVC_mean = np.zeros(row*column)
+    matrix_abs_slope = np.zeros(row*column)
+    matrix_angle_slope = np.zeros(row*column)
 
 def loadParameters():
+    global npy
     global f0, fS, Ns, Nharm, VR, Vin, CH1, CH2, Zcoil, Ccoil
     global len_time_lockin, time_lockin, Ns_cycle, Ncycles, delay
     if file_path:
         if file_path.split('.')[1] == "mat":
             mat = scipy.io.loadmat(os.path.dirname(file_path) + "/" + matrixList[file])
-            
             f0 = mat['param']['f0'][0][0][0][0]
             fS = mat['param']['fS'][0][0][0][0]
             Ns = mat['param']['Ns'][0][0][0][0]
@@ -230,11 +246,19 @@ def loadParameters():
             CH2 = mat['signals']['CH2'][0][0]
             Zcoil = mat['results']['Zcoil'][0][0]
             Ccoil = mat['results']['Lcoil'][0][0][0]
-            
         elif file_path.split('.')[1] == "csv":
             df = pd.read_csv(os.path.dirname(file_path) + "/" + matrixList[file])
             CH1 = df.Ch1
             CH2 = df.Ch2
+            config = readJSON(file_path)
+            f0 = config['f0']
+            fS = config['fS']
+            Ns = config['Ns']
+            Nharm = config['Nharm']
+        elif file_path.split('.')[1] == "npy":
+            npy = np.load(os.path.dirname(file_path) + "/" + matrixList[file])
+            CH1 = npy[0]
+            CH2 = npy[1]
             config = readJSON(file_path)
             f0 = config['f0']
             fS = config['fS']
@@ -370,17 +394,57 @@ if __name__ == '__main__':
             if plotFlag == 1:
                 plotFun()
                 
-            matrix_C[file] =  funPhasor(float_elec, plotFlag)
+            matrix_C[file], matrix_R[file], \
+            matrix_abs_phasorVC_mean[file], matrix_angle_phasorVC_mean[file], \
+            matrix_abs_slope[file], matrix_angle_slope[file] =  funPhasor(float_elec, plotFlag)
 
         else:
             print("measType is not defined")
     
     matrix_C = matrix_C.reshape(column, row)
-    # print(matrix)
+    matrix_R = matrix_R.reshape(column, row)
+
+    matrix_abs_phasorVC_mean = matrix_abs_phasorVC_mean.reshape(column, row)
+    matrix_angle_phasorVC_mean = matrix_angle_phasorVC_mean.reshape(column, row)
+    
+    matrix_abs_slope = matrix_abs_slope.reshape(column, row)
+    matrix_angle_slope = matrix_angle_slope.reshape(column, row)
+
     plt.figure()
     # ref: https://docs.python.org/3/library/os.path.html#os.path.normpath
     plt.title("Scan results for C, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
-    plt.imshow(matrix_C)
+    plt.imshow(matrix_C, aspect = "auto")
     lbl = plt.colorbar(pad = 0.15)
-    lbl.set_label('[pF]', rotation=270, labelpad=15) 
+    lbl.set_label('[pF]', rotation=270, labelpad=15)
+    
+    plt.figure()
+    plt.title("Scan results for R, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
+    plt.imshow(matrix_R, aspect = "auto")
+    lbl = plt.colorbar(pad = 0.15)
+    lbl.set_label('[ohm]', rotation=270, labelpad=15) 
+    
+    plt.figure()
+    plt.title("Scan results for matrix_abs_phasorVC_mean, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
+    plt.imshow(matrix_abs_phasorVC_mean, aspect = "auto")
+    lbl = plt.colorbar(pad = 0.15)
+    lbl.set_label('[ohm]', rotation=270, labelpad=15) 
+    
+    plt.figure()
+    plt.title("Scan results for matrix_angle_phasorVC_mean, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
+    plt.imshow(matrix_angle_phasorVC_mean, aspect = "auto")
+    lbl = plt.colorbar(pad = 0.15)
+    lbl.set_label('[ohm]', rotation=270, labelpad=15) 
+    
+    plt.figure()
+    plt.title("Scan results for matrix_abs_slope, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
+    plt.imshow(matrix_abs_slope, aspect = "auto")
+    lbl = plt.colorbar(pad = 0.15)
+    lbl.set_label('slope', rotation=270, labelpad=15) 
+    
+    plt.figure()
+    plt.title("Scan results for matrix_angle_slope, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
+    plt.imshow(matrix_angle_slope, aspect = "auto")
+    lbl = plt.colorbar(pad = 0.15)
+    lbl.set_label('slope', rotation=270, labelpad=15) 
+    
     print(" ### --- END --- ###")
