@@ -219,8 +219,10 @@ def selectFiles():
     matrixList = sorted(os.listdir(os.path.dirname(file_path)))
     if file_path.split('.')[1] == "csv" or file_path.split('.')[1] == "npy":                            
         matrixList.pop() # delete last file (config)
+    # num_del_elem = 0
+    # matrixList = matrixList[num_del_elem:-5] # delete first and last measurements
     last_matrixList = matrixList[-1]
-    row = int(last_matrixList.split("x")[0])
+    row = int(last_matrixList.split("x")[0]) # - num_del_elem
     column = int(last_matrixList.split("x")[1].split(".")[0])
     matrix_C = np.zeros(row*column)
     matrix_R = np.zeros(row*column)
@@ -384,7 +386,7 @@ if __name__ == '__main__':
             CH1f = signal.filtfilt(b, a, CH1, padtype = None) # ref: https://dsp.stackexchange.com/questions/11466/differences-between-python-and-matlab-filtfilt-function
             CH2f = signal.filtfilt(b, a, CH2, padtype = None)
             
-            VRf=CH1f.transpose()[int(4+Ns_cycle*1+delay) : int(4+Ns_cycle*(Ncycles)+delay)]
+            VRf=CH1f.transpose()[int(4+Ns_cycle*1+delay) : int(4+Ns_cycle*(Ncycles)+delay)] # considero solo i periodi interni
             Vin_f=CH2f.transpose()[int(4+Ns_cycle*1+delay) : int(4+Ns_cycle*(Ncycles)+delay)]
             
             # PHASOR lock-in operation

@@ -26,6 +26,8 @@ Nharm=50            # n° armoniche
 Tsignal=2           # in [ms]
 path = ""
 
+measTime = 0.0
+
 signal_dict = {"UNKNOWN" : libtiepie.ST_UNKNOWN,        # 0
                "SINE" : libtiepie.ST_SINE,              # 1
                "TRIANGLE" : libtiepie.ST_TRIANGLE,      # 2
@@ -353,7 +355,7 @@ def acquire_data(i, k, path, move):
     # saveCSV(i, k, list(dataOUT), path, move)
     saveNPY(i, k, dataOUT, path, move)
     start = time.time()
-    while time.time() - start < 30.0:
+    while time.time() - start < 20.0:
         i = i+1
         scp.start()
         gen.start()
@@ -365,14 +367,11 @@ def acquire_data(i, k, path, move):
         dataOUT = scp.get_data()
         saveNPY(i, k, dataOUT, path, move)
         # saveCSV(i, k, list(dataOUT), path, move)
-
     gen.output_on = False
     
 def saveNPY(i, k, dataOUT, path, move):
     dataOUT = np.array(dataOUT)
     name = setName(i, k)
-    # Output CSV data:
-    # filepath = path + "/" + str(j) + ".csv"
     filepath = path + "/" + name + ".npy"
     np.save(filepath, dataOUT)
     print('Data written to: ' + filepath)
@@ -456,6 +455,7 @@ move = ""
 def main():
     global a, f, segnale, Nsamples
     global scp, gen
+    # measTime = float(input("Insert measurement duration in sec"))
     while process(input(prompt())):
         path = createDir()
         saveJSON(path, a, f)
