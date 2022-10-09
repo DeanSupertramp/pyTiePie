@@ -36,7 +36,7 @@
 <h3 align="center">pyTiePie</h3>
 
   <p align="center">
-Simulation, design and implementation of a non-destructive diagnostic system based on capacitive sensors.
+Development of Capacitive Imaging measurement methods for non-destructive testing applications ​
     <br />
     <a href="https://github.com/DeanSupertramp/pyTiePie"><strong>Explore the docs »</strong></a>
     <br />
@@ -85,9 +85,9 @@ Simulation, design and implementation of a non-destructive diagnostic system bas
 
 <!-- Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `DeanSupertramp`, `pyTiePie`, `DeanSupertramp`, `andrea-alecce`, `gmail`, `andrealecce3`, `project_title`, `project_description` -->
 
-**Simulation, design and implementation of a non-destructive diagnostic system based on capacitive sensors.**
+**Development of Capacitive Imaging measurement methods for non-destructive testing applications ​**
 
-My master's thesis revolves around non-destructive technologies for diagnostics, using capacitive sensors. The simulations, signal acquisitions, data processing were done using Python and Matlab scripts and using a TiePie HS5, an all-in-one Arbitrary Waveform Generator and Acquisition system. The thesis foresees the realization of a portable system to carry out these tests
+This thesis work has as its objective the study of non-destructive techniques (NDT), that is techniques capable of obtaining information from a measured object without damaging it. In particular, the activity focused on the analysis, development, and comparison of different measurement techniques for Capacitive Imaging (CI) to define, characterize and detect defects in dielectric materials such as polymers, ceramics, pyrex. The application of materials on these, combined with the possibility of simpler configurations from a practical point of view, makes this technique rather versatile than the other non-destructive ones. The theoretical aspects related to the problem were initially addressed, simulating different configurations of the measurement setup to evaluate their sensitivity and accuracy. Subsequently, the experimental setup was carried out, totally managed by Python script, including the definition and generation of the excitation signals, the acquisition and processing of the digital output signals of the capacitive sensor. For each measurement configuration, the results obtained in terms of sensitivity were experimentally compared.
 <p align="right">(<a href="#top">back to top</a>)</p>
 
 ### Built With
@@ -255,7 +255,7 @@ Project Link: [https://github.com/DeanSupertramp/pyTiePie](https://github.com/De
 ## Acknowledgments
 
 * [Prof. Marco Ricci]()
-* []()
+* [Ing. Stefano Laureti]()
 * []()
 
 <p align="right">(<a href="#top">back to top</a>)</p>
