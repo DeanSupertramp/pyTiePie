@@ -45,6 +45,7 @@ def voltageDifference_fasore():
             V2_den_mc[i] = - 1j + w * R * C_value[i]
             V2_mc[i] = Vin * V2_num_mc[i] /V2_den_mc[i]
             diff_mc[i,j] = (V1_mc[i,j]-V2_mc[i])
+            diff_abs_mc[i,j]  = (abs(V1_mc[i,j])-abs(V2_mc[i]))
     for i in range(nstep):
         for j in range(nstep):
             for k in range(len(w_vec)):
@@ -68,6 +69,16 @@ def voltageDifference_fasore():
     lbl.set_label('[v]', rotation=270, labelpad=15)
     
     plt.figure()
+    plt.title("Module of the voltage difference - [abs(diff)]")
+    plt.ylabel('Cap Value [pF]')
+    plt.xlabel('dC')    
+    plt.imshow(abs(diff_mc_w[:,:,4]), origin='upper',
+               extent=[1/dCstep, 1/(dCstep*nstep), nstep, 1],
+               aspect='auto')
+    lbl = plt.colorbar()
+    lbl.set_label('[v]', rotation=270, labelpad=15)
+    
+    plt.figure()
     plt.title("Phase Difference")
     plt.ylabel('Cap Value [pF]')
     plt.xlabel('dC') 
@@ -82,7 +93,7 @@ def voltageDifference_fasore():
     plt.title("Difference of voltage modules - abs(V1) - abs(V2)")
     plt.ylabel('Cap Value [pF]')
     plt.xlabel('dC')    
-    plt.imshow((abs(V1_mc) - abs(V2_mc)), origin='upper',
+    plt.imshow((diff_abs_mc.real), origin='upper',
                extent=[1/dCstep, 1/(dCstep*nstep), nstep, 1],
                aspect='auto')
     lbl = plt.colorbar()

@@ -56,6 +56,7 @@ V2_den_mc = np.zeros(nstep, dtype=complex)
 V1_mc = np.zeros([nstep,nstep], dtype=complex)
 V2_mc = np.zeros(nstep, dtype=complex)
 diff_mc = np.zeros([nstep,nstep], dtype=complex)
+diff_abs_mc = np.zeros([nstep,nstep], dtype=complex)
 
 # 3-D
 V1_num_mc_w = np.zeros([nstep,nstep, wstep], dtype=complex)
@@ -64,7 +65,7 @@ V1_den_mc_w = np.zeros([nstep,nstep, wstep], dtype=complex)
 V2_den_mc_w = np.zeros([nstep, wstep], dtype=complex)
 V1_mc_w = np.zeros([nstep,nstep, wstep], dtype=complex)
 V2_mc_w = np.zeros([nstep, wstep], dtype=complex)
-diff_mc_w = np.zeros([nstep,nstep, wstep], dtype=complex)
+diff_mc_w = np.zeros([nstep,nstep, wstep])
 
 # Spice matrix
 matr = np.zeros([nstep,nstep])

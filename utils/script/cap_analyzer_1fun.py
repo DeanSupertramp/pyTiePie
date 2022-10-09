@@ -19,6 +19,10 @@ import os
 import pandas as pd
 import json
 
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.collections import PolyCollection
+from matplotlib import colors as mcolors
+
 def clear_all():
     """Clears all the variables from the workspace of the spyder application."""
     gl = globals().copy()
@@ -44,14 +48,21 @@ def modelCX(x, p1, p2):
     # return p2+1/(2*np.pi*x*p1)
     return p2+(1/x)*1/(2*np.pi*p1)
 
+def smooth(y, box_pts):
+    box = np.ones(box_pts)/box_pts
+    y_smooth = np.convolve(y, box, mode='valid')
+    return y_smooth
+
 def funPhasor(float_elec, plotFlag):
+    global Cestimated
     if float_elec == 0:
         phasorVC = phasorVin - phasorVR
         ZC = (phasorVC/phasorVR)*R
         RC = ZC.real
         XC = -ZC.imag
         Cestimated = 1/(2*np.pi*freq*np.squeeze(XC))*1e12
-        Cestimated_mean = np.mean(Cestimated[0:40]) #ad alte freq la cap varia molto
+
+        Cestimated_mean = np.mean(Cestimated[1:9]) #ad alte freq la cap varia molto
         # Cestimated_mean = Cestimated[0] #ad alte freq la cap varia molto
         RCestimated_mean = np.mean(RC[0:40]) #ad alte freq la cap varia molto
         # RCestimated_mean = RC[0] #ad alte freq la cap varia molto
@@ -67,6 +78,7 @@ def funPhasor(float_elec, plotFlag):
         RCestimated_mean = np.mean(RC[0:40]) #ad alte freq la cap varia molto
         # RCestimated_mean = RC[0] #ad alte freq la cap varia molto
         # print("Cestimated_mean: ", Cestimated_mean, "pF")
+        Cmeas = np.average(np.abs(phasorVR[1:5]))
     else:
         print("invalid")
     # FITTING
@@ -74,6 +86,8 @@ def funPhasor(float_elec, plotFlag):
     Cestimated2 = popt[0]*1e12
     # print("C estimated from fitting: ", Cestimated2, "pF")
     popt2, pcov2 = curve_fit(modelCR, freq, np.squeeze(RC))
+    Restimated2 = popt2[0]
+
     # print("R estimated from fitting: ", popt2, "ohm")
     
     abs_phasorVC_mean = np.mean(abs(phasorVC))
@@ -82,35 +96,41 @@ def funPhasor(float_elec, plotFlag):
     abs_slope = np.polyfit(freq, abs(ZC),1)[0]
     angle_slope = np.polyfit(freq, np.angle(ZC),1)[0]
     
+    # plt.figure()
+    # plt.title("Cestimated n: " + str(file))
+    # plt.ylabel('cap [pF]')
+    # plt.xlabel('samples')
+    # plt.plot(Cestimated)
+    
     if plotFlag == 1:
         plt.figure()
         plt.subplot(2,2,1)
         plt.title("phasorVC.real", fontsize=10, fontweight = 'bold', pad=5)
-        plt.ylabel('Amplitude [V]')
+        plt.ylabel('Amplitude')
         plt.xlabel('Frequency [Hz]')
-        plt.plot(freq, phasorVC.real)
+        plt.plot(freq[:-1], phasorVC.real[:-1])  
         plt.subplot(2,2,2)
-        plt.ylabel('Amplitude [V]')
+        plt.ylabel('Amplitude')
         plt.xlabel('Frequency [Hz]')
         plt.title("phasorVC.imag", fontsize=10, fontweight = 'bold', pad=5)
-        plt.plot(freq, phasorVC.imag)
+        plt.plot(freq[:-1], phasorVC.imag[:-1])
         plt.subplot(2,2,3)
-        plt.ylabel('Amplitude [V]')
+        plt.ylabel('Resistance')
         plt.xlabel('Frequency [Hz]')
         plt.title("RC", fontsize=10, fontweight = 'bold', pad=5)
-        plt.plot(freq, RC)
+        plt.plot(freq[:-1], RC[:-1])
         plt.subplot(2,2,4)
-        plt.ylabel('Amplitude [V]')
+        plt.ylabel('Reactance')
         plt.xlabel('Frequency [Hz]')
         plt.title("XC", fontsize=10, fontweight = 'bold', pad=5)
-        plt.plot(freq, XC)
+        plt.plot(freq[:-1], XC[:-1])
         plt.subplots_adjust(hspace = 0.55, wspace=0.45)
     
         plt.figure()
         plt.title("C estimated", fontsize=10, fontweight = 'bold', pad=5)
         plt.ylabel('Capacitance [pF]')
         plt.xlabel('Frequency [Hz]')
-        plt.plot(freq, Cestimated)
+        plt.plot(freq[:-1], Cestimated[:-1])
         
         plt.figure()
         plt.subplot(2,1,1)
@@ -132,14 +152,14 @@ def funPhasor(float_elec, plotFlag):
         plt.xlabel('Frequency [Hz]')
         plt.plot(freq, abs(ZC))
         plt.subplot(2,1,2)
-        plt.ylabel('abs(ZC)')
+        plt.ylabel('angle(ZC)')
         plt.xlabel('Frequency [Hz]')
         plt.plot(freq, np.angle(ZC))
         
         plt.figure()
         plt.title("Capacitive reactance XC", fontsize=10, fontweight = 'bold', pad=5)
-        plt.plot(freq, XC, label = 'XC')
-        plt.plot(freq, modelCX(freq, *popt), label = 'XC fitted')
+        plt.plot(freq[:-1], XC[:-1], label = 'XC')
+        plt.plot(freq[:-1], modelCX(freq, *popt)[:-1], label = 'XC fitted')
         plt.ylabel('value (ohm)')
         plt.xlabel('Frequency [Hz]')
         plt.legend()
@@ -148,10 +168,10 @@ def funPhasor(float_elec, plotFlag):
         plt.title("Capacitive resistance RC", fontsize=10, fontweight = 'bold', pad=5)
         plt.ylabel("RC [ohm]")
         plt.xlabel("frequency [Hz]")
-        plt.plot(freq, RC, label = "RC")
-        plt.plot(freq, modelCR(freq, *popt2), label = "RC fitted")
+        plt.plot(freq[:-1], RC[:-1], label = "RC")
+        plt.plot(freq[:-1], modelCR(freq, *popt2)[:-1], label = "RC fitted")
         plt.legend()
-    return Cestimated_mean, RCestimated_mean, abs_phasorVC_mean, angle_phasorVC_mean, abs_slope, angle_slope
+    return Cmeas, Cestimated, Cestimated[0], Cestimated_mean, RCestimated_mean, abs_phasorVC_mean, angle_phasorVC_mean, abs_slope, angle_slope
 
 def countFilef():
     countFile = 0
@@ -169,9 +189,11 @@ def checkMeasType():
         if file_path.split('.')[1] == "mat":
             mat = scipy.io.loadmat(file_path)
             measType = mat['param']['measType'][0][0][0][0]
+            Nc = mat['param']['Ns'][0][0][0][0]
         elif file_path.split('.')[1] == "csv" or file_path.split('.')[1] == "npy":
             config = readJSON(file_path)
             measType = config['measType']
+            Nc = config['Ns']
         if measType == 0:
             print("Measurement Type: MONO")
         elif measType == 1:
@@ -179,7 +201,7 @@ def checkMeasType():
         else:
             print("Measurement Type: NONE, quit...")
             sys.exit(1)            
-        return measType
+        return measType, Nc
     except Exception as e:
         print('Exception: ', e)
 
@@ -206,11 +228,27 @@ else:
     print("Command not found")
     sys.exit(1)
 
+def renameFile():
+    root = tk.Tk()
+    root.withdraw()
+    folder = filedialog.askopenfilename()
+    for count, filename in enumerate(os.listdir(os.path.dirname(folder))):
+        row_new = (filename.split("x")[0])
+        column_new = filename.split("x")[1].split(".")[0]
+        frmt= filename.split("x")[1].split(".")[1]
+        dst = f"{str(column_new)}x{str(row_new)}.{str(frmt)}"
+        src =f"{folder}/{filename}"  # foldername/filename, if .py file is outside folder
+        dst =f"{folder}/nuova cartella/{dst}"
+        # rename() function will
+        # rename all the files
+        os.rename(src, dst)
+
+
 def selectFiles():
     global file_path, matrixList
-    global matrix_C, matrix_R, matrix_abs_phasorVC_mean, matrix_angle_phasorVC_mean
-    global matrix_abs_slope, matrix_angle_slope
-    global column, row
+    global matrix_C, matrix_R, matrix_abs_phasorVC_mean, matrix_angle_phasorVC_mean, matrix_M, matrix_total, M
+    global matrix_abs_slope, matrix_angle_slope, Cmeas_output
+    global column, row, Nharm
     root = tk.Tk()
     # root.lift()
     # root.wm_attributes('-topmost', 1)
@@ -219,22 +257,31 @@ def selectFiles():
     matrixList = sorted(os.listdir(os.path.dirname(file_path)))
     if file_path.split('.')[1] == "csv" or file_path.split('.')[1] == "npy":                            
         matrixList.pop() # delete last file (config)
-    # num_del_elem = 0
-    # matrixList = matrixList[num_del_elem:-5] # delete first and last measurements
     last_matrixList = matrixList[-1]
-    row = int(last_matrixList.split("x")[0]) # - num_del_elem
-    column = int(last_matrixList.split("x")[1].split(".")[0])
+    row = int(last_matrixList.split("x")[0])
+            
+    # column = int(last_matrixList.split("x")[1].split(".")[0])
+    column = 100
     matrix_C = np.zeros(row*column)
     matrix_R = np.zeros(row*column)
     matrix_abs_phasorVC_mean = np.zeros(row*column)
     matrix_angle_phasorVC_mean = np.zeros(row*column)
     matrix_abs_slope = np.zeros(row*column)
     matrix_angle_slope = np.zeros(row*column)
+    
+    matrix_M = np.zeros(10*column)
+    matrix_M = matrix_M.reshape(10, column)
+    
+    matrix_total = np.zeros(row*column)
+    
+    M = np.zeros((row*column, 10))
+    Cmeas_output = np.zeros(row*column)
+
 
 def loadParameters():
     global npy
     global f0, fS, Ns, Nharm, VR, Vin, CH1, CH2, Zcoil, Ccoil
-    global len_time_lockin, time_lockin, Ns_cycle, Ncycles, delay
+    global len_time_lockin, time_lockin, Ns_cycle, Ncycles, delay, Nharm
     if file_path:
         if file_path.split('.')[1] == "mat":
             mat = scipy.io.loadmat(os.path.dirname(file_path) + "/" + matrixList[file])
@@ -279,6 +326,8 @@ def loadParameters():
         print("no file")
         sys.exit(1)
         
+    return CH1, CH2
+        
 def plotFun():
     plt.figure()
     plt.title("Vin")
@@ -291,6 +340,32 @@ def plotFun():
     plt.ylabel('Amplitude [V]')
     plt.xlabel('samples')
     plt.plot(CH1)
+    
+    plt.figure()
+    plt.subplot(1,2,1)
+    plt.title("Vin")
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
+    plt.plot(CH2.transpose())
+    plt.subplot(1,2,2)
+    plt.title("VR")
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
+    plt.plot(CH1.transpose())
+    plt.tight_layout(pad=1.0)
+    
+    plt.figure()
+    plt.subplot(1,2,1)
+    plt.title("Vin filtered")
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
+    plt.plot(CH2f)
+    plt.subplot(1,2,2)
+    plt.title("VR filtered")
+    plt.ylabel('Amplitude [V]')
+    plt.xlabel('samples')
+    plt.plot(CH1f)
+    plt.tight_layout(pad=1.0)
     
     # plt.figure()
     # plt.title("VC")
@@ -341,17 +416,28 @@ def plotFun():
     
     plt.figure()
     plt.title("abs value of Phasor signal Filtered")
-    plt.plot(freq, abs(phasorVin), label = 'phasorVin')
-    plt.plot(freq, abs(phasorVR), label = 'phasorVR')
-    plt.ylabel('Amplitude [V]')
+    plt.plot(freq[:-1], abs(phasorVin)[:-1], label = 'phasorVin')
+    plt.plot(freq[:-1], abs(phasorVR)[:-1], label = 'phasorVR')
+    plt.ylabel('Amplitude')
     plt.xlabel('Frequency [Hz]')
     plt.legend()
 
 if __name__ == '__main__':
     selectFiles()
-    measType = checkMeasType()
-    for file in range(countFilef()):
-        loadParameters()
+    measType, Ns = checkMeasType()
+
+    # CH1_total = np.zeros((row,column,Ns))
+    # CH2_total = np.zeros((row,column,Ns))
+    
+    e1 = np.zeros((Ns, row*column))
+    e2 = np.zeros((Ns, row*column))
+
+
+    # for file in range(countFilef()):
+    for file in range(row*column):
+
+        # CH1_total[file], CH2_total[file] = loadParameters()
+        e1[:,file], e2[:,file] = loadParameters()
             
         s_harml = np.zeros([Nharm,len_time_lockin])
         # s_harml=np.empty((Nharm,Ns_cycle*(Ncycles-1)),'float')
@@ -377,17 +463,27 @@ if __name__ == '__main__':
             # VC = Vin - VR
             
             # lock-in operation
-            Vin_lockin = np.dot(lock_in, CH2.transpose()[0:len_time_lockin])
-            VR_lockin = np.dot(lock_in, CH1.transpose()[0:len_time_lockin])
+            # Vin_lockin = np.dot(lock_in, CH2.transpose()[0:len_time_lockin])
+            # VR_lockin = np.dot(lock_in, CH1.transpose()[0:len_time_lockin])
         
             #b,a = butter(2, [0.25, 1.5*Nharm]*f0/(fS/2), btype='bandpass')
-            b,a = butter(2, 2*Nharm*f0/(fS), btype='lowpass') # ref: https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html
+            b,a = butter(4, 4*Nharm*f0/(fS), btype='lowpass') # ref: https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html
         
+            # CH1f = signal.filtfilt(b, a, e1[:,file], padtype = None) # ref: https://dsp.stackexchange.com/questions/11466/differences-between-python-and-matlab-filtfilt-function
+            # CH2f = signal.filtfilt(b, a, e2[:,file], padtype = None)
+
             CH1f = signal.filtfilt(b, a, CH1, padtype = None) # ref: https://dsp.stackexchange.com/questions/11466/differences-between-python-and-matlab-filtfilt-function
-            CH2f = signal.filtfilt(b, a, CH2, padtype = None)
+            CH2f = signal.filtfilt(b, a, CH2, padtype = None)            
             
-            VRf=CH1f.transpose()[int(4+Ns_cycle*1+delay) : int(4+Ns_cycle*(Ncycles)+delay)] # considero solo i periodi interni
+            # CH1ff = signal.filtfilt(bb, aa, CH1[4:-4], padtype = None) # ref: https://dsp.stackexchange.com/questions/11466/differences-between-python-and-matlab-filtfilt-function
+            # CH2ff = signal.filtfilt(bb, aa, CH2[4:-4], padtype = None)
+            
+            VRf=CH1f.transpose()[int(4+Ns_cycle*1+delay) : int(4+Ns_cycle*(Ncycles)+delay)]
             Vin_f=CH2f.transpose()[int(4+Ns_cycle*1+delay) : int(4+Ns_cycle*(Ncycles)+delay)]
+
+            # VRf=CH1f.transpose()[4: int(4+Ns_cycle*(Ncycles)+delay)]
+            # Vin_f=CH2f.transpose()[4 : int(4+Ns_cycle*(Ncycles)+delay)]
+
             
             # PHASOR lock-in operation
             phasorVin = np.dot(lock_in, Vin_f)
@@ -395,58 +491,261 @@ if __name__ == '__main__':
                         
             if plotFlag == 1:
                 plotFun()
-                
-            matrix_C[file], matrix_R[file], \
+            
+            Cmeas_output[file], M[file,:], matrix_total[file], matrix_C[file], matrix_R[file], \
             matrix_abs_phasorVC_mean[file], matrix_angle_phasorVC_mean[file], \
             matrix_abs_slope[file], matrix_angle_slope[file] =  funPhasor(float_elec, plotFlag)
 
         else:
             print("measType is not defined")
     
+    # M_reshape = np.zeros((row,column,10))
+    # for i in range(M.shape[1]):
+    #     for j in range(M.shape[0]):
+    #         M_reshape[i] = M[j].reshape()
+    
+    # Cmeas_output = smooth(Cmeas_output, 10)
+    Cmeas_matrix = Cmeas_output.reshape(row,column)
+    
+    # fig = plt.figure()
+    # ax = fig.gca(projection='3d')
+    # def cc(arg):
+    #     return mcolors.to_rgba(arg, alpha=0.0)
+
+    # xs = np.arange(0, column)
+    # verts = []
+    # zs = np.arange(0, row)
+    # for z in zs:
+    #     ys = Cmeas_matrix[z,:]
+    #     # ys[0], ys[-1] = 0, 0
+    #     verts.append(list(zip(xs, ys)))
+    # poly = PolyCollection(verts,
+    #                       facecolors=[cc('r')],
+    #                       edgecolors=("black",)
+    #                       # facecolors=[cc('r'), cc('g'), cc('b'),
+    #                       #                     cc('y')]
+    #                       )
+    # poly.set_alpha(0.7)
+    # ax.add_collection3d(poly, zs=zs, zdir='y')
+    # ax.set_xlabel('X')
+    # ax.set_xlim3d(0, column)
+    # ax.set_ylabel('Y')
+    # ax.set_ylim3d(-1, row+1)
+    # ax.set_zlabel('Z')
+    # ax.set_zlim3d(0.00025, 0.0005)
+    # plt.show()
+
+    
+    matrix_C_unreshaped = matrix_C
+    matrix_R_unreshaped = matrix_R
+    
     matrix_C = matrix_C.reshape(column, row)
     matrix_R = matrix_R.reshape(column, row)
+    
+    matrix_total = matrix_total.reshape(column, row)
+    
+
+    # plt.plot(np.convolve(matrix_M[1,20:],[1,1,1,1,1,1],"same"))
 
     matrix_abs_phasorVC_mean = matrix_abs_phasorVC_mean.reshape(column, row)
     matrix_angle_phasorVC_mean = matrix_angle_phasorVC_mean.reshape(column, row)
     
     matrix_abs_slope = matrix_abs_slope.reshape(column, row)
     matrix_angle_slope = matrix_angle_slope.reshape(column, row)
+      
 
-    plt.figure()
-    # ref: https://docs.python.org/3/library/os.path.html#os.path.normpath
-    plt.title("Scan results for C, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
-    plt.imshow(matrix_C, aspect = "auto")
-    lbl = plt.colorbar(pad = 0.15)
-    lbl.set_label('[pF]', rotation=270, labelpad=15)
+    # plt.figure()
+    # # ref: https://docs.python.org/3/library/os.path.html#os.path.normpath
+    # plt.title("Scan results for C @ freq = 5000Hz")
+    # plt.imshow(matrix_total, aspect = "auto")
+    # lbl = plt.colorbar(pad = 0.15)
+    # lbl.set_label('[pF]', rotation=270, labelpad=15)
     
-    plt.figure()
-    plt.title("Scan results for R, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
-    plt.imshow(matrix_R, aspect = "auto")
-    lbl = plt.colorbar(pad = 0.15)
-    lbl.set_label('[ohm]', rotation=270, labelpad=15) 
+    # matrix_total2 = matrix_total
+    # # for i in range(len(matrix_total)):
+    # #     if abs(matrix_total[i])  > 60:
+    # #         matrix_total2[i] = matrix_total[i-1]
+            
+    # for i in range(matrix_total.shape[0]):
+    #     for j in range(matrix_total.shape[1]):
+    #         if abs(matrix_total[i][j])  > 60:
+    #             matrix_total2[i][j] = 60
+            
+    # plt.figure()
+    # # ref: https://docs.python.org/3/library/os.path.html#os.path.normpath
+    # plt.title("matrix")
+    # plt.imshow(matrix_total2, aspect = "auto")
+    # lbl = plt.colorbar(pad = 0.15)
+    # lbl.set_label('[pF]', rotation=270, labelpad=15)
+
+    # plt.figure()
+    # # ref: https://docs.python.org/3/library/os.path.html#os.path.normpath
+    # plt.title("Scan results for C, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
+    # plt.imshow(matrix_C[:,1:], aspect = "auto")
+    # lbl = plt.colorbar(pad = 0.15)
+    # lbl.set_label('[pF]', rotation=270, labelpad=15)
     
-    plt.figure()
-    plt.title("Scan results for matrix_abs_phasorVC_mean, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
-    plt.imshow(matrix_abs_phasorVC_mean, aspect = "auto")
-    lbl = plt.colorbar(pad = 0.15)
-    lbl.set_label('[ohm]', rotation=270, labelpad=15) 
+    # plt.figure()
+    # plt.title("Scan results for R, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
+    # plt.imshow(matrix_R, aspect = "auto")
+    # lbl = plt.colorbar(pad = 0.15)
+    # lbl.set_label('[ohm]', rotation=270, labelpad=15)
     
-    plt.figure()
-    plt.title("Scan results for matrix_angle_phasorVC_mean, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
-    plt.imshow(matrix_angle_phasorVC_mean, aspect = "auto")
-    lbl = plt.colorbar(pad = 0.15)
-    lbl.set_label('[ohm]', rotation=270, labelpad=15) 
+    # plt.figure()
+    # plt.imshow(matrix_M[5:6,30:-30], aspect="auto")
+    # lbl = plt.colorbar(pad = 0.15)
+    # lbl.set_label('[pF]', rotation=270, labelpad=15)
     
-    plt.figure()
-    plt.title("Scan results for matrix_abs_slope, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
-    plt.imshow(matrix_abs_slope, aspect = "auto")
-    lbl = plt.colorbar(pad = 0.15)
-    lbl.set_label('slope', rotation=270, labelpad=15) 
+    # plt.figure()
+    # plt.title("Scan results for matrix_abs_phasorVC_mean, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
+    # plt.imshow(matrix_abs_phasorVC_mean, aspect = "auto")
+    # lbl = plt.colorbar(pad = 0.15)
+    # lbl.set_label('[ohm]', rotation=270, labelpad=15) 
     
-    plt.figure()
-    plt.title("Scan results for matrix_angle_slope, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
-    plt.imshow(matrix_angle_slope, aspect = "auto")
-    lbl = plt.colorbar(pad = 0.15)
-    lbl.set_label('slope', rotation=270, labelpad=15) 
+    # plt.figure()
+    # plt.title("Scan results for matrix_angle_phasorVC_mean, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
+    # plt.imshow(matrix_angle_phasorVC_mean, aspect = "auto")
+    # lbl = plt.colorbar(pad = 0.15)
+    # lbl.set_label('[ohm]', rotation=270, labelpad=15) 
     
+    # plt.figure()
+    # plt.title("Scan results for matrix_abs_slope, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
+    # plt.imshow(matrix_abs_slope, aspect = "auto")
+    # lbl = plt.colorbar(pad = 0.15)
+    # lbl.set_label('slope', rotation=270, labelpad=15) 
+    
+    # plt.figure()
+    # plt.title("Scan results for matrix_angle_slope, material: " + os.path.basename(os.path.normpath(os.path.dirname(file_path))))
+    # plt.imshow(matrix_angle_slope, aspect = "auto")
+    # lbl = plt.colorbar(pad = 0.15)
+    # lbl.set_label('slope', rotation=270, labelpad=15) 
+    
+    
+    
+    
+    # (x, y) = np.meshgrid(row*column, Ns)
+    # ax = plt.axes(projection='3d')
+    # ax.plot_surface(x,y,e1)
+    
+    # (x, y) = np.meshgrid(row*column, Ns)
+    # ax = plt.axes(projection='3d')
+    # ax.plot_surface(row,column,e2)
+    
+    # from mpl_toolkits.mplot3d.axes3d import Axes3D
+    # fig = plt.figure()
+    # ax=Axes3D(fig)
+    # ax.plot_surface(row,column,e2)
+    # plt.show()
+    # # e1 = e1.reshape((row,column,Ns))
+    
+    # plt.figure()
+    # plt.subplot(2,1,1)
+    # plt.title("CH1")
+    # plt.ylabel("acquisizione")
+    # plt.plot(e1[:,5])
+    # plt.subplot(2,1,2)
+    # plt.title("CH2")
+    # plt.ylabel("acquisizione")
+    # plt.xlabel("samples")
+    # plt.plot(e2[:,5])
+    # plt.subplots_adjust(hspace = 0.5)
+    
+    # plt.figure()
+    # plt.subplot(2,1,1)
+    # plt.title("CH1")
+    # plt.ylabel("acquisizione")
+    # plt.imshow(e1.transpose(),aspect="auto")
+    # lbl = plt.colorbar(pad = 0.05)
+    # lbl.set_label('[V]', rotation=270, labelpad=5)
+    # plt.subplot(2,1,2)
+    # plt.title("CH2")
+    # plt.ylabel("acquisizione")
+    # plt.xlabel("samples")
+    # plt.imshow(e2.transpose(),aspect="auto")
+    # lbl = plt.colorbar(pad = 0.05)
+    # lbl.set_label('[V]', rotation=270, labelpad=5)
+    # plt.subplots_adjust(hspace = 0.5)
+
+    # plt.figure()
+    # plt.subplot(2,1,1)
+    # plt.title("CH1")
+    # plt.magnitude_spectrum(e1[:,164], Fs=fS)
+    # plt.xlim(0,300000)
+    # plt.subplot(2,1,2)
+    # plt.title("CH2")
+    # plt.magnitude_spectrum(e2[:,164], Fs=fS)
+    # plt.xlim(0,300000)
+    # plt.ylim(0,0.7)
+    # plt.subplots_adjust(hspace = 0.6)
+    
+    # plt.figure()
+    # plt.subplot(2,1,1)
+    # plt.title("CH1")
+    # plt.magnitude_spectrum(e1.transpose()[5,:], Fs=fS)
+    # plt.xlim(0,300000)
+    # plt.subplot(2,1,2)
+    # plt.title("CH2")
+    # plt.magnitude_spectrum(e2.transpose()[5,:], Fs=fS)
+    # plt.xlim(0,300000)
+    # # plt.ylim(0,0.7)
+    # plt.subplots_adjust(hspace = 0.6)
+    
+    # b,a = butter(4, 4*Nharm*f0/(fS), btype='lowpass') # ref: https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html
+    # b,a = butter(2, [0.01*Nharm*f0/fS, 3.5*Nharm*f0/fS], btype='bandpass')
+
+    # e1f = signal.filtfilt(b, a, e1[:,164], padtype = None) # ref: https://dsp.stackexchange.com/questions/11466/differences-between-python-and-matlab-filtfilt-function
+    # e2f = signal.filtfilt(b, a, e2[:,164], padtype = None) 
+    
+    # M[1:-1,0]
+    
+    # matrix_total2_f=smooth(np.squeeze(matrix_total2.transpose()),5)
+
+    
+    # plt.plot(matrix_total2_f)    
+    # plt.figure()
+    # plt.subplot(2,1,1)
+    # plt.title("CH1f")
+    # plt.magnitude_spectrum(e1f, Fs=fS)
+    # plt.xlim(0,6000)
+    # plt.subplot(2,1,2)
+    # plt.title("CH2f")
+    # plt.magnitude_spectrum(e2f, Fs=fS)
+    # plt.xlim(0,6000)
+    # # plt.ylim(0,0.7)
+    # plt.subplots_adjust(hspace = 0.6)
+    
+    # plt.figure()
+    # plt.subplot(2,1,1)
+    # plt.title("C center", fontsize=10, fontweight = 'bold', pad=5)
+    # plt.ylabel('Capacitance [pF]')
+    # # plt.xlabel('Frequency [Hz]')
+    # plt.plot(freq[:-1], M[10,:-1])
+    # plt.subplot(2,1,2)
+    # plt.title("C metal", fontsize=10, fontweight = 'bold', pad=5)
+    # plt.ylabel('Capacitance [pF]')
+    # plt.xlabel('Frequency [Hz]')
+    # plt.plot(freq[:-1], M[0,:-1])
+    # plt.subplots_adjust(hspace = 0.4)
+    
+    # M2 = smooth(M[100,:-1],5)
+    
+    # plt.figure()
+    # plt.title("C")
+    # plt.plot(freq[:-5], M2*1e-10)
+    # plt.ylabel('Capacitance [F]')
+    # plt.xlabel('Frequency [Hz]')
+
     print(" ### --- END --- ###")
+    
+
+    # # x cols, y rows
+    # #(x, y) = np.meshgrid(np.arange(matrix.shape[0]), np.arange(matrix.shape[1]))
+    # (x, y) = np.meshgrid(np.arange(e1.shape[0]), np.arange(e1.shape[1]))
+    # fig_s = plt.figure()
+    # ax = fig_s.add_subplot(111, projection='3d')
+    # fig_s.suptitle('Absolute voltage differences by varying the frequency')
+    # # for s in range(0, len(w_vec), 5):
+    # surf = ax.plot_surface(x, y, e1, cmap=plt.cm.coolwarm)
+    # fig_s.show()
+
+
