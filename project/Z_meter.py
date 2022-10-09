@@ -27,25 +27,25 @@ def Z_meter_excitation(a, f0, Nharm, Tsignal,fS):
         freq[j_harm] = f0 * (j_harm + 1)
         
     # ******* PLOT DEBUG **********
-    from matplotlib import pyplot as pl
-    pl.plot(time, s_harm[1])
-    pl.plot(time_lockin, s_harml[1])    
-    pl.plot(time_lockin, lock_in[1])  
-    pl.plot(time, s_harm[1], time_lockin, s_harml[1], time_lockin, lock_in[1])
+    # from matplotlib import pyplot as plt
+    # plt.plot(time, s_harm[1])
+    # plt.plot(time_lockin, s_harml[1])    
+    # plt.plot(time_lockin, lock_in[1])  
+    # plt.plot(time, s_harm[1], time_lockin, s_harml[1], time_lockin, lock_in[1])
             
     s[0,2:-2]=np.sum(s_harm,0); # sommo l'array per righe, ottengo un unico array somma con la dimensione di una riga
     # il risultato della somma lo colloco nella prima riga, partendo dalla colonna 2 alla colonna -2
     # Praticamente l'array somma inizia due colonne dopo e finisce due colonne prima
 
     # ******* PLOT DEBUG **********
-    times = np.arange(0,Ns+4)/fS
-    pl.plot(times, s[0])
+    # times = np.arange(0,Ns+4)/fS
+    # plt.plot(times, s[0])
     
-    for j_harm in range(int(Nharm)):
-        ampl[j_harm,:]=np.sum(s[0,0:Ns_cycle*(Ncycles-1)]*lock_in[j_harm,:])
+    # for j_harm in range(int(Nharm)):
+    #     ampl[j_harm,:]=np.sum(s[0,0:Ns_cycle*(Ncycles-1)]*lock_in[j_harm,:])
        
     # ******* PLOT DEBUG **********  
-    pl.plot(Nharm, ampl[0])
+    # plt.plot(Nharm, ampl[0])
 
     params={'Ns':Ns, 'Ns_cycle':Ns_cycle, 'Ncycles':Ncycles, 'freq':freq, 'time':time}
     

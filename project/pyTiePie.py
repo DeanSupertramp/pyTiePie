@@ -17,13 +17,13 @@ from libtiepie.const import ST_UNKNOWN, ST_SINE, ST_TRIANGLE, ST_SQUARE, ST_DC, 
 from MyArgParser import MyArgParser
 import Z_meter
 
-f = 1000.0
+f = 500.0
 a = 1.0
 Nsamples = 1000
 measType = 1
 # f0=4e3              #freq. fondamentale
-Nharm=50            # n° armoniche
-Tsignal=2           # in [ms]
+Nharm=10            # n° armoniche
+Tsignal = 1000/f          # in [ms]
 path = ""
 
 measTime = 0.0
@@ -120,6 +120,7 @@ def gen_settings():
         gen.signal_type = k2v
         # see const.py for signal definitions and types
         if SIGNAL_TYPES[k2v].upper() == "ARBITRARY":
+            # Tsignal = (1/f)*1e3
             segnale, lock_in, params = Z_meter.Z_meter_excitation(a,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
             # Select frequency mode:
             gen.frequency_mode = libtiepie.FM_SAMPLEFREQUENCY
@@ -132,6 +133,16 @@ def gen_settings():
             # Enable output:
             gen.output_on = True
             gen.mode = libtiepie.GM_BURST_COUNT
+            
+            # Locate trigger input:
+            trigger_input = gen.trigger_inputs.get_by_id(libtiepie.TIID_EXT1)
+            # if trigger_input is None:
+            #     trigger_input = gen.trigger_inputs.get_by_id(libtiepie.TIID_EXT2)
+            # Enable trigger input:
+            trigger_input.enabled = True
+            # Set trigger input kind:
+            trigger_input.kind = libtiepie.TK_FALLINGEDGE
+            
             # Set burst count:
             gen.burst_count = 1  # 100 periods
             # Create signal array, and load it into the generator:
@@ -283,28 +294,31 @@ def osc_settings():
          ch.enabled = True
          # Set range:
          # ch.ranges                                     # mostra i possibili range = [0.2, 0.4, 0.8, 2.0, 4.0, 8.0, 20.0, 40.0, 80.0]
-         ch.range = 2                                  # min 200mV, max 80V
-         ch.auto_ranging = True                          # range riferim: https://api.tiepie.com/libtiepie/0.9.15/group__scp__ch__range.html
+         if ch == 1:
+             ch.range = 12                                  # min 200mV, max 80V
+         elif ch == 0:     
+             ch.auto_ranging = True                          # range riferim: https://api.tiepie.com/libtiepie/0.9.15/group__scp__ch__range.html
          # Set coupling:
          # ch.couplings                                  # 3 Opzioni CK_DCV (1), CK_ACV (2) . NON supporta invece CK_ACA (8), CK_DCA (4), CK_OHM (16) e CK_UNKNOWN (0)
-         ch.coupling = libtiepie.CK_DCV                  # DC Volt
+         ch.coupling = libtiepie.CK_ACV                  # DC Volt
      # Set trigger timeout:
-     scp.trigger_time_out = 10  # 1 s
+     scp.trigger_time_out = 2  # 1 s
      # Disable all channel trigger sources:
      for ch in scp.channels:
          ch.trigger.enabled = False
 
      trigger_input_scp = scp.trigger_inputs.get_by_id(libtiepie.TIID_GENERATOR_START)  # or TIID_GENERATOR_NEW_PERIOD or TIID_GENERATOR_STOP
-     # trigger_input_scp = scp.trigger_inputs.get_by_id(libtiepie.TIID_GENERATOR_NEW_PERIOD)  # or TIID_GENERATOR_NEW_PERIOD or TIID_GENERATOR_STOP
+     # trigger_input_scp = scp.trigger_inputs.get_by_id(libtiepie.TIID_EXT1)  # or TIID_GENERATOR_NEW_PERIOD or TIID_GENERATOR_STOP
      if trigger_input_scp is None:
          raise Exception('Unknown trigger input!')
          return False
+
      # Enable trigger input:
      trigger_input_scp.enabled = True
-     # Locate trigger input:
+      # Locate trigger input:
      trigger_input = gen.trigger_inputs.get_by_id(libtiepie.TIID_EXT1)
-     if trigger_input is None:
-         trigger_input = gen.trigger_inputs.get_by_id(libtiepie.TIID_EXT2)
+     # if trigger_input is None:
+         # trigger_input = gen.trigger_inputs.get_by_id(libtiepie.TIID_EXT2)
      trigger_input.enabled = True
      return True
 
@@ -354,6 +368,7 @@ def acquire_data(i, k, path, move):
     dataOUT = scp.get_data()
     # saveCSV(i, k, list(dataOUT), path, move)
     saveNPY(i, k, dataOUT, path, move)
+    
     start = time.time()
     while time.time() - start < 20.0:
         i = i+1
@@ -372,6 +387,8 @@ def acquire_data(i, k, path, move):
 def saveNPY(i, k, dataOUT, path, move):
     dataOUT = np.array(dataOUT)
     name = setName(i, k)
+    # Output CSV data:
+    # filepath = path + "/" + str(j) + ".csv"
     filepath = path + "/" + name + ".npy"
     np.save(filepath, dataOUT)
     print('Data written to: ' + filepath)
@@ -422,7 +439,7 @@ def saveJSON(path, ampl, f_0):
         json.dump(data, f, ensure_ascii=False, indent=4)
 
 def setName(i, j):
-    return str("{:04d}".format(i)) + "x" + str("{:04d}".format(j))
+    return str("{:04d}".format(j)) + "x" + str("{:04d}".format(i))
 
 # Search for devices:
 libtiepie.device_list.update()
@@ -435,6 +452,9 @@ if "220" in tiepieList().split()[1] : # resolution: 14 bit
 else:
     fS = scp.sample_frequency_max/5
 
+fS=10e6
+    
+Tsignal = 2*(1/f)*1e3
 segnale, lock_in, params = Z_meter.Z_meter_excitation(a,f,Nharm,Tsignal,fS)[0:3] # più pulito (rif: https://stackoverflow.com/a/431868 )
 
 move = ""
